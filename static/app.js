@@ -207,7 +207,6 @@ async function renderProblems() {
                                 <td class="px-4 py-2 text-gray-400 text-xs">${p.next_review || '-'}</td>
                                 <td class="px-4 py-2 whitespace-nowrap">
                                     <button onclick="showQuickReview(${p.id}, \`${p.title}\`)" class="text-blue-600 text-xs hover:underline">刷了</button>
-                                    ${p.status === 'new' ? `<button onclick="markKnown(${p.id})" class="text-green-600 text-xs hover:underline ml-2">标记已会</button>` : ''}
                                     ${!p.is_preset ? `<button onclick="deleteProblem(${p.id})" class="text-red-500 text-xs hover:underline ml-2">删除</button>` : ''}
                                 </td>
                             </tr>
@@ -247,16 +246,6 @@ async function addProblem() {
             }),
         });
         toast('添加成功');
-        render();
-    } catch (e) {
-        toast(e.message, 'error');
-    }
-}
-
-async function markKnown(id) {
-    try {
-        await api(`/problems/${id}/mark-known`, { method: 'POST' });
-        toast('已标记为已掌握');
         render();
     } catch (e) {
         toast(e.message, 'error');

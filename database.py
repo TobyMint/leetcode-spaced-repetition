@@ -457,25 +457,3 @@ def update_settings(settings: dict) -> dict:
     conn.close()
     return get_settings()
 
-
-def mark_as_known(problem_id: int) -> bool:
-    """手动标记题目为已掌握（初始化已有进度）。"""
-    conn = get_conn()
-    row = conn.execute("SELECT problem_id FROM problem_state WHERE problem_id = ?", (problem_id,)).fetchone()
-    if not row:
-        conn.close()
-        return False
-    today = date.today()
-    conn.execute("""
-        UPDATE problem_state SET
-            status = 'mastered',
-            ef = 2.5,
-            consecutive_correct = 5,
-            interval_days = 21,
-            next_review = ?,
-            last_reviewed = ?
-        WHERE problem_id = ?
-    """, ((today.replace(day=today.day + 21) if today.day <= 10 else today).isoformat(), today.isoformat(), problem_id))
-    conn.commit()
-    conn.close()
-    return True

@@ -101,13 +101,6 @@ def delete_problem(problem_id: int):
     return {"ok": True}
 
 
-@app.post("/api/problems/{problem_id}/mark-known")
-def mark_known(problem_id: int):
-    if not database.mark_as_known(problem_id):
-        raise HTTPException(404, "Problem not found")
-    return {"ok": True}
-
-
 @app.get("/api/stats")
 def stats():
     return database.get_stats()
