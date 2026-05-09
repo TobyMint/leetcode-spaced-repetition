@@ -25,14 +25,14 @@ cd leetcode-spaced-repetition
 uv run main.py
 ```
 
-浏览器访问 http://localhost:8000
+浏览器访问 http://localhost:19999
 
 uv 会自动创建虚拟环境、安装依赖，无需手动操作。
 
 ### 指定端口
 
 ```bash
-uv run python -c "import uvicorn; uvicorn.run('main:app', host='0.0.0.0', port=3000)"
+uv run python -c "import uvicorn; uvicorn.run('main:app', host='0.0.0.0', port=19999)"
 ```
 
 ## 项目结构
