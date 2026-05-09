@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from sm2 import SM2State, calculate_next_review, get_status
@@ -233,7 +233,7 @@ def get_problem(problem_id: int) -> dict | None:
 
 def get_today_problems(new_per_day: int = 3, max_review: int = 10) -> dict:
     """获取今日待刷题目。返回 {'new': [...], 'review': [...]}。"""
-    today = date.today().isoformat()
+    now = datetime.now().isoformat()
     conn = get_conn()
 
     # 新题
@@ -246,7 +246,7 @@ def get_today_problems(new_per_day: int = 3, max_review: int = 10) -> dict:
         LIMIT ?
     """, (new_per_day,)).fetchall()
 
-    # 到期复习题
+    # 到期复习题（按小时粒度比较）
     review_problems = conn.execute("""
         SELECT p.id, p.title, p.difficulty, p.category
         FROM problems p
@@ -254,7 +254,7 @@ def get_today_problems(new_per_day: int = 3, max_review: int = 10) -> dict:
         WHERE s.status != 'new' AND s.next_review IS NOT NULL AND s.next_review <= ?
         ORDER BY s.next_review
         LIMIT ?
-    """, (today, max_review)).fetchall()
+    """, (now, max_review)).fetchall()
 
     conn.close()
     return {
@@ -266,7 +266,7 @@ def get_today_problems(new_per_day: int = 3, max_review: int = 10) -> dict:
 def submit_review(problem_id: int, quality: int) -> dict:
     """提交复习评分，更新状态。"""
     conn = get_conn()
-    today = date.today()
+    now = datetime.now()
 
     # 当前状态
     row = conn.execute(
@@ -282,7 +282,7 @@ def submit_review(problem_id: int, quality: int) -> dict:
         interval=row["interval_days"],
         consecutive=row["consecutive_correct"],
     )
-    new_state = calculate_next_review(state, quality, today)
+    new_state = calculate_next_review(state, quality, now)
     new_status = get_status(new_state.consecutive, new_state.interval, new_state.ef)
 
     # 更新状态
@@ -297,7 +297,7 @@ def submit_review(problem_id: int, quality: int) -> dict:
         WHERE problem_id = ?
     """, (
         new_status, new_state.ef, new_state.consecutive,
-        new_state.interval, new_state.next_review.isoformat(), today.isoformat(),
+        new_state.interval, new_state.next_review.isoformat(), now.isoformat(),
         problem_id,
     ))
 
@@ -375,10 +375,10 @@ def get_stats() -> dict:
     counts["total"] = sum(counts.values())
 
     # 今日复习数
-    today = date.today().isoformat()
+    now = datetime.now()
     today_count = conn.execute(
-        "SELECT COUNT(DISTINCT problem_id) FROM reviews WHERE reviewed_at LIKE ?",
-        (f"{today}%",),
+        "SELECT COUNT(DISTINCT problem_id) FROM reviews WHERE reviewed_at >= ? AND reviewed_at < ?",
+        (now.strftime("%Y-%m-%dT00:00:00"), (now + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00")),
     ).fetchone()[0]
 
     # 连续打卡天数

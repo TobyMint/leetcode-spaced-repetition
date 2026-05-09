@@ -1,6 +1,7 @@
 """SM-2 间隔重复算法实现。
 
 基于 SuperMemo 2 算法，根据用户每次复习的评分（0-5）来计算下次复习时间。
+以小时为粒度，精确记录复习时间戳。
 评分标准：
   0 - 完全不记得
   1 - 看到答案才想起来
@@ -13,7 +14,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import datetime, timedelta
 
 
 @dataclass
@@ -21,27 +22,23 @@ class SM2State:
     ef: float = 2.5              # 难度因子 (easiness factor)
     interval: float = 0          # 当前间隔天数
     consecutive: int = 0         # 连续正确次数
-    next_review: date | None = None
+    next_review: datetime | None = None
 
 
-def calculate_next_review(state: SM2State, quality: int, today: date | None = None) -> SM2State:
-    """根据评分计算下次复习状态。
+def calculate_next_review(state: SM2State, quality: int, now: datetime | None = None) -> SM2State:
+    """根据评分计算下次复习时间（精确到小时）。
 
     Args:
         state: 当前复习状态
         quality: 评分 (0-5)
-        today: 今天的日期，默认为 date.today()
-
-    Returns:
-        更新后的 SM2State
+        now: 当前时间，默认为 datetime.now()
     """
-    if today is None:
-        today = date.today()
+    if now is None:
+        now = datetime.now()
 
     quality = max(0, min(5, quality))
 
     if quality < 3:
-        # 完全不会，重置
         new_consecutive = 0
         new_interval = 1
         new_ef = state.ef
@@ -56,7 +53,7 @@ def calculate_next_review(state: SM2State, quality: int, today: date | None = No
         else:
             new_interval = round(state.interval * new_ef)
 
-    next_review = today + timedelta(days=int(new_interval))
+    next_review = now + timedelta(days=int(new_interval))
 
     return SM2State(
         ef=new_ef,
