@@ -139,6 +139,7 @@ window.filterState = { status: '', diff: '', category: '' };
 // ---------- 页面：题目总览 ----------
 async function renderProblems() {
     const problems = await api('/problems');
+    const filtered = filterProblems(problems);
 
     return `
         <div class="space-y-4">
@@ -167,6 +168,8 @@ async function renderProblems() {
                     ).join('')}
                 </select>
             </div>
+
+            <div class="text-sm text-gray-500">筛选结果：<span class="font-semibold text-gray-700">${filtered.length}</span> 道题</div>
 
             <div id="add-form" class="card hidden">
                 <h3 class="font-medium mb-3">添加新题目</h3>
@@ -200,7 +203,7 @@ async function renderProblems() {
                         </tr>
                     </thead>
                     <tbody>
-                        ${filterProblems(problems).map(p => `
+                        ${filtered.map(p => `
                             <tr class="problem-row border-t">
                                 <td class="px-4 py-2 text-gray-400">${p.id}</td>
                                 <td class="px-4 py-2 font-medium"><a href="${leetcodeSearchUrl(p.title)}" target="_blank" class="text-blue-600 hover:underline">${p.title}</a></td>
