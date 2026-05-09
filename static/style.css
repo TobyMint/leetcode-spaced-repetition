@@ -1,0 +1,101 @@
+/* 自定义样式补充 Tailwind */
+
+.nav-btn.active {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.diff-简单 { background-color: #d1fae5; color: #065f46; }
+.diff-中等 { background-color: #fef3c7; color: #92400e; }
+.diff-困难 { background-color: #fee2e2; color: #991b1b; }
+
+.status-new { background-color: #e5e7eb; }
+.status-learning { background-color: #bfdbfe; }
+.status-review { background-color: #fde68a; }
+.status-mastered { background-color: #a7f3d0; }
+
+/* 评分按钮 */
+.quality-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 16px;
+    transition: all 0.15s;
+}
+.quality-btn:hover {
+    transform: scale(1.1);
+}
+.q0 { background: #ef4444; color: white; }
+.q1 { background: #f97316; color: white; }
+.q2 { background: #f59e0b; color: white; }
+.q3 { background: #eab308; color: white; }
+.q4 { background: #84cc16; color: white; }
+.q5 { background: #22c55e; color: white; }
+
+/* 进度环 */
+.progress-ring {
+    transform: rotate(-90deg);
+}
+
+/* 卡片 */
+.card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    padding: 20px;
+}
+
+/* 题目行 */
+.problem-row {
+    transition: all 0.2s;
+}
+.problem-row:hover {
+    background-color: #f9fafb;
+}
+
+/* 日历热力图 */
+.calendar-cell {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+}
+.cal-0 { background: #ebedf0; }
+.cal-1 { background: #9be9a8; }
+.cal-2 { background: #40c463; }
+.cal-3 { background: #30a14e; }
+.cal-4 { background: #216e39; }
+
+/* 展开动画 */
+.expand-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+.expand-content.open {
+    max-height: 300px;
+}
+
+/* toast */
+.toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    z-index: 1000;
+    animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s;
+}
+.toast-success { background: #22c55e; }
+.toast-error { background: #ef4444; }
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
