@@ -152,6 +152,7 @@ async function renderProblems() {
                 <select id="filter-status" onchange="window.filterState.status=this.value;render()" class="border rounded-md px-2 py-1 text-sm">
                     <option value="">全部状态</option>
                     <option value="new">未开始</option>
+                    <option value="learning">学习中</option>
                     <option value="review">复习中</option>
                     <option value="mastered">已掌握</option>
                 </select>
