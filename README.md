@@ -22,7 +22,7 @@ pip install uv
 
 ```bash
 cd leetcode-spaced-repetition
-uv run uvicorn main:app --host 0.0.0.0 --port 19999
+uv run main.py
 ```
 
 浏览器访问 http://localhost:19999
