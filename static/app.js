@@ -133,8 +133,8 @@ async function submitReview(problemId, quality) {
     }
 }
 
-// ── 筛选状态记忆 ──
-const filterState = { status: '', diff: '', category: '' };
+// ── 筛选状态记忆（挂在 window 上供 inline onchange 访问）──
+window.filterState = { status: '', diff: '', category: '' };
 
 // ---------- 页面：题目总览 ----------
 async function renderProblems() {
@@ -148,19 +148,19 @@ async function renderProblems() {
             </div>
 
             <div class="flex gap-2 flex-wrap">
-                <select id="filter-status" onchange="filterState.status=this.value;render()" class="border rounded-md px-2 py-1 text-sm">
+                <select id="filter-status" onchange="window.filterState.status=this.value;render()" class="border rounded-md px-2 py-1 text-sm">
                     <option value="">全部状态</option>
                     <option value="new">未开始</option>
                     <option value="review">复习中</option>
                     <option value="mastered">已掌握</option>
                 </select>
-                <select id="filter-diff" onchange="filterState.diff=this.value;render()" class="border rounded-md px-2 py-1 text-sm">
+                <select id="filter-diff" onchange="window.filterState.diff=this.value;render()" class="border rounded-md px-2 py-1 text-sm">
                     <option value="">全部难度</option>
                     <option value="简单">简单</option>
                     <option value="中等">中等</option>
                     <option value="困难">困难</option>
                 </select>
-                <select id="filter-category" onchange="filterState.category=this.value;render()" class="border rounded-md px-2 py-1 text-sm">
+                <select id="filter-category" onchange="window.filterState.category=this.value;render()" class="border rounded-md px-2 py-1 text-sm">
                     <option value="">全部分类</option>
                     ${[...new Set(problems.map(p => p.category).filter(Boolean))].map(c =>
                         `<option value="${c}">${c}</option>`
@@ -223,9 +223,9 @@ async function renderProblems() {
 
 function filterProblems(problems) {
     return problems.filter(p =>
-        (!filterState.status || p.status === filterState.status) &&
-        (!filterState.diff || p.difficulty === filterState.diff) &&
-        (!filterState.category || p.category === filterState.category)
+        (!window.filterState.status || p.status === window.filterState.status) &&
+        (!window.filterState.diff || p.difficulty === window.filterState.diff) &&
+        (!window.filterState.category || p.category === window.filterState.category)
     );
 }
 
@@ -507,9 +507,9 @@ async function render() {
             const s = document.getElementById('filter-status');
             const d = document.getElementById('filter-diff');
             const c = document.getElementById('filter-category');
-            if (s) s.value = filterState.status;
-            if (d) d.value = filterState.diff;
-            if (c) c.value = filterState.category;
+            if (s) s.value = window.filterState.status;
+            if (d) d.value = window.filterState.diff;
+            if (c) c.value = window.filterState.category;
         }
     } catch (e) {
         app.innerHTML = `<div class="card text-center py-8 text-red-500">${e.message}</div>`;
