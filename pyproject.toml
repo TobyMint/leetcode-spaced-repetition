@@ -1,0 +1,13 @@
+[project]
+name = "leetcode-spaced-repetition"
+version = "0.1.0"
+description = "基于遗忘曲线的 LeetCode Hot 100 刷题工具"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
