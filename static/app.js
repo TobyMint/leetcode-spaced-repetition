@@ -193,7 +193,7 @@ async function renderProblems() {
                             <th class="px-4 py-2 text-left w-24">分类</th>
                             <th class="px-4 py-2 text-left w-20">状态</th>
                             <th class="px-4 py-2 text-left w-28">下次复习</th>
-                            <th class="px-4 py-2 text-left w-20">操作</th>
+                            <th class="px-4 py-2 text-left w-36">操作</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -206,7 +206,8 @@ async function renderProblems() {
                                 <td class="px-4 py-2">${statusLabel(p.status)}</td>
                                 <td class="px-4 py-2 text-gray-400 text-xs">${p.next_review || '-'}</td>
                                 <td class="px-4 py-2 whitespace-nowrap">
-                                    <button onclick="showQuickReview(${p.id}, \`${p.title}\`)" class="text-blue-600 text-xs hover:underline">刷了</button>
+                                    <button onclick="showQuickReview(${p.id}, \`${p.title}\`)" class="text-blue-600 text-xs hover:underline btn-hover-lift">刷了</button>
+                                    <button onclick="showResetConfirm(${p.id}, \`${p.title}\`)" class="text-amber-500 text-xs hover:underline ml-2">重置</button>
                                     ${!p.is_preset ? `<button onclick="deleteProblem(${p.id})" class="text-red-500 text-xs hover:underline ml-2">删除</button>` : ''}
                                 </td>
                             </tr>
@@ -297,6 +298,40 @@ async function quickReviewAndClose(id, quality) {
         });
         toast(`#${id} 已评分: ${quality} - ${qualityDesc(quality)}`);
         closeQuickReview();
+        render();
+    } catch (e) {
+        toast(e.message, 'error');
+    }
+}
+
+function showResetConfirm(id, title) {
+    const html = `
+        <div class="modal-overlay fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onclick="if(event.target===this)closeResetConfirm()">
+            <div class="modal-box bg-white rounded-xl p-6 w-96 shadow-2xl" onclick="event.stopPropagation()">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="text-2xl">⚠️</span>
+                    <h3 class="text-lg font-semibold text-gray-800">确认重置</h3>
+                </div>
+                <p class="text-sm text-gray-600 mb-2">确定要重置 <strong>#${id} ${title}</strong> 的学习进度吗？</p>
+                <p class="text-xs text-red-500 mb-4">这将清除所有复习记录和间隔数据，题目回到"未开始"状态。</p>
+                <div class="flex gap-2 justify-end">
+                    <button onclick="closeResetConfirm()" class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">取消</button>
+                    <button onclick="resetProgress(${id})" class="px-4 py-2 text-sm text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors">确认重置</button>
+                </div>
+            </div>
+        </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function closeResetConfirm() {
+    document.querySelector('.modal-overlay')?.remove();
+}
+
+async function resetProgress(id) {
+    try {
+        await api(`/problems/${id}/reset`, { method: 'POST' });
+        toast(`#${id} 进度已重置`);
+        closeResetConfirm();
         render();
     } catch (e) {
         toast(e.message, 'error');

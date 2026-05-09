@@ -457,3 +457,25 @@ def update_settings(settings: dict) -> dict:
     conn.close()
     return get_settings()
 
+
+def reset_progress(problem_id: int) -> bool:
+    """重置题目进度到未开始状态。"""
+    conn = get_conn()
+    row = conn.execute("SELECT problem_id FROM problem_state WHERE problem_id = ?", (problem_id,)).fetchone()
+    if not row:
+        conn.close()
+        return False
+    conn.execute("""
+        UPDATE problem_state SET
+            status = 'new',
+            ef = 2.5,
+            consecutive_correct = 0,
+            interval_days = 0,
+            next_review = NULL,
+            last_reviewed = NULL
+        WHERE problem_id = ?
+    """, (problem_id,))
+    conn.execute("DELETE FROM reviews WHERE problem_id = ?", (problem_id,))
+    conn.commit()
+    conn.close()
+    return True

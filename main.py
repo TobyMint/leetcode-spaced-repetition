@@ -101,6 +101,13 @@ def delete_problem(problem_id: int):
     return {"ok": True}
 
 
+@app.post("/api/problems/{problem_id}/reset")
+def reset_problem(problem_id: int):
+    if not database.reset_progress(problem_id):
+        raise HTTPException(404, "Problem not found")
+    return {"ok": True}
+
+
 @app.get("/api/stats")
 def stats():
     return database.get_stats()
