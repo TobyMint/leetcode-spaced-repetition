@@ -17,19 +17,19 @@ async function api(path, opts = {}) {
 
 function toast(msg, type = 'success') {
     const el = document.createElement('div');
-    el.className = toast toast-${type};
+    el.className = `toast toast-${type}`;
     el.textContent = msg;
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 3000);
 }
 
 function diffBadge(diff) {
-    return <span class="diff-${diff} px-2 py-0.5 rounded text-xs font-medium">${diff}</span>;
+    return `<span class="diff-${diff} px-2 py-0.5 rounded text-xs font-medium">${diff}</span>`;
 }
 
 function statusLabel(status) {
     const map = { new: '未开始', learning: '学习中', review: '复习中', mastered: '已掌握' };
-    return <span class="status-${status} px-2 py-0.5 rounded text-xs">${map[status] || status}</span>;
+    return `<span class="status-${status} px-2 py-0.5 rounded text-xs">${map[status] || status}</span>`;
 }
 
 // ---------- 路由 ----------
@@ -52,7 +52,7 @@ async function renderToday() {
     if (all.length === 0) {
         return `
             <div class="card text-center py-12">
-                <p class="text-gray-400 text-lg">今天没有需要刷的题目 🎉</p>
+                <p class="text-gray-400 text-lg">今天没有需要刷的题目</p>
                 <p class="text-gray-400 text-sm mt-2">可以去"题目总览"手动添加新题，或者等明天再来</p>
             </div>`;
     }
@@ -109,20 +109,21 @@ function qualityDesc(q) {
 }
 
 function toggleExpand(id) {
-    const content = document.getElementById(expand-${id});
-    const arrow = document.getElementById(arrow-${id});
+    const content = document.getElementById(`expand-${id}`);
+    const arrow = document.getElementById(`arrow-${id}`);
+    if (!content || !arrow) return;
     content.classList.toggle('open');
     arrow.style.transform = content.classList.contains('open') ? 'rotate(180deg)' : '';
 }
 
 async function submitReview(problemId, quality) {
     try {
-        await api(/review/${problemId}, {
+        await api(`/review/${problemId}`, {
             method: 'POST',
             body: JSON.stringify({ quality }),
         });
-        toast(已评分: ${quality} - ${qualityDesc(quality)});
-        render(); // 刷新
+        toast(`已评分: ${quality} - ${qualityDesc(quality)}`);
+        render();
     } catch (e) {
         toast(e.message, 'error');
     }
@@ -139,7 +140,6 @@ async function renderProblems() {
                 <button onclick="showAddProblem()" class="bg-blue-500 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-600">+ 添加题目</button>
             </div>
 
-            <!-- 筛选栏 -->
             <div class="flex gap-2 flex-wrap">
                 <select id="filter-status" onchange="render()" class="border rounded-md px-2 py-1 text-sm">
                     <option value="">全部状态</option>
@@ -156,12 +156,11 @@ async function renderProblems() {
                 <select id="filter-category" onchange="render()" class="border rounded-md px-2 py-1 text-sm">
                     <option value="">全部分类</option>
                     ${[...new Set(problems.map(p => p.category).filter(Boolean))].map(c =>
-                        <option value="${c}">${c}</option>
+                        `<option value="${c}">${c}</option>`
                     ).join('')}
                 </select>
             </div>
 
-            <!-- 添加题目表单 -->
             <div id="add-form" class="card hidden">
                 <h3 class="font-medium mb-3">添加新题目</h3>
                 <div class="grid grid-cols-2 gap-3">
@@ -180,7 +179,6 @@ async function renderProblems() {
                 </div>
             </div>
 
-            <!-- 题目列表 -->
             <div class="card p-0 overflow-hidden">
                 <table class="w-full text-sm">
                     <thead class="bg-gray-50 text-gray-500">
@@ -252,7 +250,7 @@ async function addProblem() {
 
 async function markKnown(id) {
     try {
-        await api(/problems/${id}/mark-known, { method: 'POST' });
+        await api(`/problems/${id}/mark-known`, { method: 'POST' });
         toast('已标记为已掌握');
         render();
     } catch (e) {
@@ -263,7 +261,7 @@ async function markKnown(id) {
 async function deleteProblem(id) {
     if (!confirm('确定删除此题？')) return;
     try {
-        await api(/problems/${id}, { method: 'DELETE' });
+        await api(`/problems/${id}`, { method: 'DELETE' });
         toast('已删除');
         render();
     } catch (e) {
@@ -276,13 +274,11 @@ async function renderStats() {
     const stats = await api('/stats');
     const { counts, today_reviewed, streak, daily, difficulty } = stats;
     const masteredPercent = counts.total ? Math.round((counts.mastered / counts.total) * 100) : 0;
-    const reviewedPercent = counts.total ? Math.round(((counts.review + counts.mastered) / counts.total) * 100) : 0;
 
     return `
         <div class="space-y-6">
             <h2 class="text-lg font-semibold text-gray-800">学习统计</h2>
 
-            <!-- 概览卡片 -->
             <div class="grid grid-cols-4 gap-4">
                 <div class="card text-center">
                     <p class="text-3xl font-bold text-blue-500">${counts.total}</p>
@@ -302,7 +298,6 @@ async function renderStats() {
                 </div>
             </div>
 
-            <!-- 进度环 -->
             <div class="card flex items-center gap-8">
                 <div class="relative" style="width:120px;height:120px">
                     <svg class="progress-ring" width="120" height="120">
@@ -326,7 +321,6 @@ async function renderStats() {
                 </div>
             </div>
 
-            <!-- 各难度完成率 -->
             <div class="card">
                 <h3 class="font-medium mb-3">各难度完成率</h3>
                 <div class="space-y-3">
@@ -346,7 +340,6 @@ async function renderStats() {
                 </div>
             </div>
 
-            <!-- 最近 7 天 -->
             <div class="card">
                 <h3 class="font-medium mb-3">最近 7 天</h3>
                 <div class="flex items-end gap-2 h-32">
