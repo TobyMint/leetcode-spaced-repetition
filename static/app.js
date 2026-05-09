@@ -198,7 +198,7 @@ async function renderProblems() {
                                 <td class="px-4 py-2 text-gray-400">${p.id}</td>
                                 <td class="px-4 py-2 font-medium">${p.title}</td>
                                 <td class="px-4 py-2">${diffBadge(p.difficulty)}</td>
-                                <td class="px-4 py-2 text-gray-500">${p.category || '-'}</td>
+                                <td class="px-4 py-2 text-gray-500 whitespace-nowrap">${p.category || '-'}</td>
                                 <td class="px-4 py-2">${statusLabel(p.status)}</td>
                                 <td class="px-4 py-2 text-gray-400 text-xs">${p.next_review || '-'}</td>
                                 <td class="px-4 py-2 whitespace-nowrap">
