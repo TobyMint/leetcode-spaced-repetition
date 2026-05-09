@@ -23,6 +23,10 @@ function toast(msg, type = 'success') {
     setTimeout(() => el.remove(), 3000);
 }
 
+function leetcodeSearchUrl(title) {
+    return `https://leetcode.cn/problemset/?search=${encodeURIComponent(title)}`;
+}
+
 function diffBadge(diff) {
     return `<span class="diff-${diff} px-2 py-0.5 rounded text-xs font-medium">${diff}</span>`;
 }
@@ -77,7 +81,7 @@ function renderTodayItem(p) {
             <div class="flex items-center justify-between cursor-pointer" onclick="toggleExpand(${p.id})">
                 <div class="flex items-center gap-3">
                     <span class="text-gray-400 text-sm w-8">#${p.id}</span>
-                    <span class="font-medium text-gray-800">${p.title}</span>
+                    <a href="${leetcodeSearchUrl(p.title)}" target="_blank" onclick="event.stopPropagation()" class="font-medium text-blue-600 hover:underline">${p.title}</a>
                     ${diffBadge(p.difficulty)}
                     ${tag}
                 </div>
@@ -196,7 +200,7 @@ async function renderProblems() {
                         ${filterProblems(problems).map(p => `
                             <tr class="problem-row border-t">
                                 <td class="px-4 py-2 text-gray-400">${p.id}</td>
-                                <td class="px-4 py-2 font-medium">${p.title}</td>
+                                <td class="px-4 py-2 font-medium"><a href="${leetcodeSearchUrl(p.title)}" target="_blank" class="text-blue-600 hover:underline">${p.title}</a></td>
                                 <td class="px-4 py-2">${diffBadge(p.difficulty)}</td>
                                 <td class="px-4 py-2 text-gray-500 whitespace-nowrap">${p.category || '-'}</td>
                                 <td class="px-4 py-2">${statusLabel(p.status)}</td>
