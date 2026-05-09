@@ -29,7 +29,7 @@ function diffBadge(diff) {
 
 function statusLabel(status) {
     const map = { new: '未开始', learning: '学习中', review: '复习中', mastered: '已掌握' };
-    return `<span class="status-${status} px-2 py-0.5 rounded text-xs">${map[status] || status}</span>`;
+    return `<span class="status-${status} px-2 py-0.5 rounded text-xs whitespace-nowrap">${map[status] || status}</span>`;
 }
 
 // ---------- 路由 ----------
