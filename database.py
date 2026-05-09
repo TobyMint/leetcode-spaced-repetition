@@ -166,6 +166,15 @@ def init_db() -> None:
             key TEXT PRIMARY KEY,
             value TEXT NOT NULL
         );
+
+        CREATE TABLE IF NOT EXISTS activity_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            problem_id INTEGER NOT NULL,
+            action TEXT NOT NULL,
+            detail TEXT,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (problem_id) REFERENCES problems(id)
+        );
     """)
 
     # 检查是否已导入 Hot 100
@@ -297,6 +306,10 @@ def submit_review(problem_id: int, quality: int) -> dict:
         "INSERT INTO reviews (problem_id, reviewed_at, quality) VALUES (?, ?, ?)",
         (problem_id, datetime.now().isoformat(), quality),
     )
+    conn.execute(
+        "INSERT INTO activity_log (problem_id, action, detail, created_at) VALUES (?, 'review', ?, ?)",
+        (problem_id, f"评分 {quality}", datetime.now().isoformat()),
+    )
 
     conn.commit()
     conn.close()
@@ -322,6 +335,10 @@ def add_problem(title: str, difficulty: str, category: str = "", url: str = "") 
         "INSERT INTO problem_state (problem_id) VALUES (?)",
         (problem_id,),
     )
+    conn.execute(
+        "INSERT INTO activity_log (problem_id, action, detail, created_at) VALUES (?, 'add', ?, datetime('now', 'localtime'))",
+        (problem_id, f"添加题目：{title}（{difficulty}）"),
+    )
     conn.commit()
     conn.close()
     return {"id": problem_id, "title": title, "difficulty": difficulty, "category": category}
@@ -330,10 +347,12 @@ def add_problem(title: str, difficulty: str, category: str = "", url: str = "") 
 def delete_problem(problem_id: int) -> bool:
     """删除用户添加的题目（预置题目不可删除）。"""
     conn = get_conn()
-    row = conn.execute("SELECT is_preset FROM problems WHERE id = ?", (problem_id,)).fetchone()
+    row = conn.execute("SELECT is_preset, title FROM problems WHERE id = ?", (problem_id,)).fetchone()
     if not row or row["is_preset"]:
         conn.close()
         return False
+    title = row["title"]
+    conn.execute("DELETE FROM activity_log WHERE problem_id = ?", (problem_id,))
     conn.execute("DELETE FROM reviews WHERE problem_id = ?", (problem_id,))
     conn.execute("DELETE FROM problem_state WHERE problem_id = ?", (problem_id,))
     conn.execute("DELETE FROM problems WHERE id = ?", (problem_id,))
@@ -476,6 +495,37 @@ def reset_progress(problem_id: int) -> bool:
         WHERE problem_id = ?
     """, (problem_id,))
     conn.execute("DELETE FROM reviews WHERE problem_id = ?", (problem_id,))
+    conn.execute(
+        "INSERT INTO activity_log (problem_id, action, detail, created_at) VALUES (?, 'reset', '重置进度', datetime('now', 'localtime'))",
+        (problem_id,),
+    )
     conn.commit()
     conn.close()
     return True
+
+
+def log_activity(problem_id: int, action: str, detail: str = "") -> None:
+    """记录一条活动日志。"""
+    from datetime import datetime
+    conn = get_conn()
+    conn.execute(
+        "INSERT INTO activity_log (problem_id, action, detail, created_at) VALUES (?, ?, ?, ?)",
+        (problem_id, action, detail, datetime.now().isoformat()),
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_activity_log(limit: int = 200) -> list[dict]:
+    """获取最近的活动日志，按时间倒序。"""
+    conn = get_conn()
+    rows = conn.execute("""
+        SELECT a.id, a.problem_id, a.action, a.detail, a.created_at,
+               p.title
+        FROM activity_log a
+        JOIN problems p ON a.problem_id = p.id
+        ORDER BY a.created_at DESC
+        LIMIT ?
+    """, (limit,)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]

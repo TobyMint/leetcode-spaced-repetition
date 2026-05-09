@@ -496,6 +496,53 @@ async function saveSettings() {
     }
 }
 
+// ---------- 页面：活动日志 ----------
+async function renderActivity() {
+    const logs = await api('/activity');
+
+    if (logs.length === 0) {
+        return `
+            <div class="card text-center py-12">
+                <p class="text-gray-400 text-lg">暂无活动记录</p>
+                <p class="text-gray-400 text-sm mt-2">开始刷题后这里会显示你的操作记录</p>
+            </div>`;
+    }
+
+    const actionLabels = {
+        review: '复习评分',
+        add: '添加题目',
+        reset: '重置进度',
+    };
+    const actionColors = {
+        review: 'text-blue-600 bg-blue-50',
+        add: 'text-green-600 bg-green-50',
+        reset: 'text-orange-600 bg-orange-50',
+    };
+
+    return `
+        <div class="space-y-4">
+            <h2 class="text-lg font-semibold text-gray-800">活动日志</h2>
+            <div class="card p-0 overflow-hidden">
+                <div class="divide-y">
+                    ${logs.map(log => {
+                        const date = new Date(log.created_at);
+                        const timeStr = date.toLocaleString('zh-CN', {
+                            month: '2-digit', day: '2-digit',
+                            hour: '2-digit', minute: '2-digit',
+                        });
+                        return `
+                            <div class="px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors">
+                                <span class="text-xs text-gray-400 w-24 shrink-0">${timeStr}</span>
+                                <span class="text-xs px-2 py-0.5 rounded font-medium shrink-0 ${actionColors[log.action] || 'text-gray-600 bg-gray-100'}">${actionLabels[log.action] || log.action}</span>
+                                <a href="${leetcodeSearchUrl(log.title)}" target="_blank" class="text-sm font-medium text-blue-600 hover:underline">#${log.problem_id} ${log.title}</a>
+                                <span class="text-xs text-gray-400">${log.detail || ''}</span>
+                            </div>`;
+                    }).join('')}
+                </div>
+            </div>
+        </div>`;
+}
+
 // ---------- 渲染入口 ----------
 async function render() {
     const app = document.getElementById('app');
@@ -505,6 +552,7 @@ async function render() {
             problems: renderProblems,
             stats: renderStats,
             settings: renderSettings,
+            activity: renderActivity,
         };
         app.innerHTML = await renderers[router.current]();
         if (router.current === 'problems') {

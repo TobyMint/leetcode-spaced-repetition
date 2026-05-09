@@ -113,6 +113,11 @@ def stats():
     return database.get_stats()
 
 
+@app.get("/api/activity")
+def activity_log():
+    return database.get_activity_log()
+
+
 @app.get("/api/calendar")
 def calendar():
     return database.get_calendar_data()
