@@ -201,8 +201,9 @@ async function renderProblems() {
                                 <td class="px-4 py-2 text-gray-500">${p.category || '-'}</td>
                                 <td class="px-4 py-2">${statusLabel(p.status)}</td>
                                 <td class="px-4 py-2 text-gray-400 text-xs">${p.next_review || '-'}</td>
-                                <td class="px-4 py-2">
-                                    ${p.status === 'new' ? `<button onclick="markKnown(${p.id})" class="text-green-600 text-xs hover:underline">标记已会</button>` : ''}
+                                <td class="px-4 py-2 whitespace-nowrap">
+                                    <button onclick="showQuickReview(${p.id}, \`${p.title}\`)" class="text-blue-600 text-xs hover:underline">刷了</button>
+                                    ${p.status === 'new' ? `<button onclick="markKnown(${p.id})" class="text-green-600 text-xs hover:underline ml-2">标记已会</button>` : ''}
                                     ${!p.is_preset ? `<button onclick="deleteProblem(${p.id})" class="text-red-500 text-xs hover:underline ml-2">删除</button>` : ''}
                                 </td>
                             </tr>
@@ -263,6 +264,46 @@ async function deleteProblem(id) {
     try {
         await api(`/problems/${id}`, { method: 'DELETE' });
         toast('已删除');
+        render();
+    } catch (e) {
+        toast(e.message, 'error');
+    }
+}
+
+function showQuickReview(id, title) {
+    const html = `
+        <div id="quick-review-overlay" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onclick="if(event.target===this)closeQuickReview()">
+            <div class="bg-white rounded-xl p-6 w-80 shadow-lg" onclick="event.stopPropagation()">
+                <p class="font-medium text-gray-800 mb-1">#${id} ${title}</p>
+                <p class="text-sm text-gray-500 mb-3">这道题做得怎么样？</p>
+                <div class="flex gap-2 mb-3">
+                    ${[0,1,2,3,4,5].map(q => `
+                        <button class="quality-btn q${q}" onclick="quickReviewAndClose(${id}, ${q})" title="${qualityDesc(q)}">${q}</button>
+                    `).join('')}
+                </div>
+                <div class="flex gap-3 text-xs text-gray-400">
+                    <span>0-2: 不会</span>
+                    <span>3: 勉强</span>
+                    <span>4: 犹豫</span>
+                    <span>5: 轻松</span>
+                </div>
+            </div>
+        </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function closeQuickReview() {
+    document.getElementById('quick-review-overlay')?.remove();
+}
+
+async function quickReviewAndClose(id, quality) {
+    try {
+        await api(`/review/${id}`, {
+            method: 'POST',
+            body: JSON.stringify({ quality }),
+        });
+        toast(`#${id} 已评分: ${quality} - ${qualityDesc(quality)}`);
+        closeQuickReview();
         render();
     } catch (e) {
         toast(e.message, 'error');
