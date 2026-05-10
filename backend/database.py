@@ -8,7 +8,10 @@ from pathlib import Path
 
 from sm2 import SM2State, calculate_next_review, get_status
 
-DB_PATH = Path(__file__).parent / "leetcode_100.db"
+# 优先使用项目根目录的数据库（旧位置兼容），其次 backend/ 下
+_ROOT_DB = Path(__file__).parent.parent / "leetcode_100.db"
+_BACKEND_DB = Path(__file__).parent / "leetcode_100.db"
+DB_PATH = _ROOT_DB if _ROOT_DB.exists() else _BACKEND_DB
 
 # LeetCode Hot 100 预置数据
 HOT_100 = [
