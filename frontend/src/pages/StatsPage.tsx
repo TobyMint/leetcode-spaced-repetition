@@ -24,7 +24,7 @@ export function StatsPage() {
     const key = d.toISOString().slice(0, 10)
     const label = d.toLocaleDateString('zh-CN', { weekday: 'short' })
     const item = daily.find((x: any) => x.day === key)
-    recentDays.push({ label, count: item ? item.cnt ?? item.count : 0 })
+    recentDays.push({ label, count: item ? item.cnt : 0 })
   }
   const maxCount = Math.max(...recentDays.map(d => d.count), 1)
 
