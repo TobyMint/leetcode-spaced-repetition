@@ -16,17 +16,8 @@
 ## 快速开始
 
 ```bash
-# 1. 安装 uv
-pip install uv
-
-# 2. 构建前端
-cd frontend
-npm install
-npm run build
-cd ..
-
-# 3. 启动
-uv run uvicorn main:app --app-dir backend --host 0.0.0.0 --port 19999
+pip install uv   # 仅首次
+./start.sh
 ```
 
 浏览器访问 http://localhost:19999
