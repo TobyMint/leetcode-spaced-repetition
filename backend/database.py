@@ -154,6 +154,8 @@ def init_db() -> None:
             interval_days REAL DEFAULT 0,
             next_review TEXT,
             last_reviewed TEXT,
+            notes TEXT DEFAULT '',
+            code TEXT DEFAULT '',
             FOREIGN KEY (problem_id) REFERENCES problems(id)
         );
 
@@ -179,6 +181,16 @@ def init_db() -> None:
             FOREIGN KEY (problem_id) REFERENCES problems(id)
         );
     """)
+
+    # 迁移：为旧数据库添加 notes、code 列
+    try:
+        conn.execute("ALTER TABLE problem_state ADD COLUMN notes TEXT DEFAULT ''")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        conn.execute("ALTER TABLE problem_state ADD COLUMN code TEXT DEFAULT ''")
+    except sqlite3.OperationalError:
+        pass
 
     # 检查是否已导入 Hot 100
     count = conn.execute("SELECT COUNT(*) FROM problems WHERE is_preset = 1").fetchone()[0]
@@ -211,7 +223,7 @@ def get_all_problems() -> list[dict]:
     rows = conn.execute("""
         SELECT p.id, p.title, p.difficulty, p.category, p.leetcode_url, p.is_preset,
                s.status, s.ef, s.consecutive_correct, s.interval_days,
-               s.next_review, s.last_reviewed
+               s.next_review, s.last_reviewed, s.notes, s.code
         FROM problems p
         LEFT JOIN problem_state s ON p.id = s.problem_id
         ORDER BY p.id
@@ -225,7 +237,7 @@ def get_problem(problem_id: int) -> dict | None:
     row = conn.execute("""
         SELECT p.id, p.title, p.difficulty, p.category, p.leetcode_url, p.is_preset,
                s.status, s.ef, s.consecutive_correct, s.interval_days,
-               s.next_review, s.last_reviewed
+               s.next_review, s.last_reviewed, s.notes, s.code
         FROM problems p
         LEFT JOIN problem_state s ON p.id = s.problem_id
         WHERE p.id = ?
@@ -546,3 +558,30 @@ def get_problem_activity(problem_id: int, limit: int = 50) -> list[dict]:
     """, (problem_id, limit)).fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+def get_problem_notes(problem_id: int) -> dict:
+    """获取题目的笔记和代码。"""
+    conn = get_conn()
+    row = conn.execute(
+        "SELECT notes, code FROM problem_state WHERE problem_id = ?",
+        (problem_id,),
+    ).fetchone()
+    conn.close()
+    return {"notes": row["notes"] or "", "code": row["code"] or ""} if row else {"notes": "", "code": ""}
+
+
+def save_problem_notes(problem_id: int, notes: str = "", code: str = "") -> bool:
+    """保存题目的笔记和/或代码。"""
+    conn = get_conn()
+    row = conn.execute("SELECT problem_id FROM problem_state WHERE problem_id = ?", (problem_id,)).fetchone()
+    if not row:
+        conn.close()
+        return False
+    conn.execute(
+        "UPDATE problem_state SET notes = ?, code = ? WHERE problem_id = ?",
+        (notes, code, problem_id),
+    )
+    conn.commit()
+    conn.close()
+    return True

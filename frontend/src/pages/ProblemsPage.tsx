@@ -6,6 +6,7 @@ import { StatusLabel } from '../components/StatusLabel'
 import { QuickReviewModal } from '../components/QuickReviewModal'
 import { ResetConfirmModal } from '../components/ResetConfirmModal'
 import { ProblemActivityModal } from '../components/ProblemActivityModal'
+import { ProblemNotesModal } from '../components/ProblemNotesModal'
 import { RandomPickModal } from '../components/RandomPickModal'
 import { useToast } from '../components/Toast'
 import type { Problem, ProblemPoolItem } from '../types'
@@ -20,6 +21,7 @@ export function ProblemsPage() {
   const [reviewModal, setReviewModal] = useState<ProblemPoolItem | null>(null)
   const [resetModal, setResetModal] = useState<ProblemPoolItem | null>(null)
   const [activityModal, setActivityModal] = useState<ProblemPoolItem | null>(null)
+  const [notesModal, setNotesModal] = useState<ProblemPoolItem | null>(null)
   const [randomPool, setRandomPool] = useState<ProblemPoolItem[] | null>(null)
   const [newTitle, setNewTitle] = useState('')
   const [newDiff, setNewDiff] = useState('中等')
@@ -154,7 +156,7 @@ export function ProblemsPage() {
               <th className="px-4 py-2 text-left w-24">分类</th>
               <th className="px-4 py-2 text-left w-20">状态</th>
               <th className="px-4 py-2 text-left w-28">下次复习</th>
-              <th className="px-4 py-2 text-left w-44">操作</th>
+              <th className="px-4 py-2 text-left w-52">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -170,6 +172,7 @@ export function ProblemsPage() {
                 <td className="px-4 py-2 text-gray-400 text-xs">{p.next_review || '-'}</td>
                 <td className="px-4 py-2 whitespace-nowrap">
                   <button onClick={() => setReviewModal({ id: p.id, title: p.title, difficulty: p.difficulty })} className="text-blue-600 text-xs hover:underline">刷了</button>
+                  <button onClick={() => setNotesModal({ id: p.id, title: p.title, difficulty: p.difficulty })} className="text-emerald-500 text-xs hover:underline ml-2">笔记</button>
                   <button onClick={() => setActivityModal({ id: p.id, title: p.title, difficulty: p.difficulty })} className="text-gray-500 text-xs hover:underline ml-2">日志</button>
                   <button onClick={() => setResetModal({ id: p.id, title: p.title, difficulty: p.difficulty })} className="text-amber-500 text-xs hover:underline ml-2">重置</button>
                   {!p.is_preset && (
@@ -190,6 +193,9 @@ export function ProblemsPage() {
       )}
       {activityModal && (
         <ProblemActivityModal problem={activityModal} onClose={() => setActivityModal(null)} />
+      )}
+      {notesModal && (
+        <ProblemNotesModal problem={notesModal} onClose={() => setNotesModal(null)} />
       )}
       {randomPool && (
         <RandomPickModal pool={randomPool} onReview={(p) => setReviewModal(p)} onClose={() => setRandomPool(null)} />

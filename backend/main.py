@@ -51,6 +51,10 @@ class SettingsRequest(BaseModel):
     mastered_consecutive: int | None = None
     mastered_interval: int | None = None
 
+class NotesRequest(BaseModel):
+    notes: str = ""
+    code: str = ""
+
 
 # ---------- Routes ----------
 
@@ -117,6 +121,18 @@ def activity_log():
 @app.get("/api/problems/{problem_id}/activity")
 def problem_activity(problem_id: int):
     return database.get_problem_activity(problem_id)
+
+
+@app.get("/api/problems/{problem_id}/notes")
+def get_notes(problem_id: int):
+    return database.get_problem_notes(problem_id)
+
+
+@app.put("/api/problems/{problem_id}/notes")
+def save_notes(problem_id: int, req: NotesRequest):
+    if not database.save_problem_notes(problem_id, req.notes, req.code):
+        raise HTTPException(404, "Problem not found")
+    return {"ok": True}
 
 
 @app.get("/api/calendar")

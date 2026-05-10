@@ -11,6 +11,8 @@ export interface Problem {
   interval_days: number
   next_review: string | null
   last_reviewed: string | null
+  notes: string
+  code: string
 }
 
 export interface TodayProblems {

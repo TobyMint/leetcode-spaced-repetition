@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import { Loading } from '../components/Loading'
 import { useToast } from '../components/Toast'
+import { CalendarHeatmap } from '../components/CalendarHeatmap'
 import { DiffBadge } from '../components/DiffBadge'
 import type { Stats } from '../types'
 
@@ -34,6 +35,8 @@ export function StatsPage() {
   return (
     <div className="page-enter space-y-6">
       <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">学习统计</h2>
+
+      <CalendarHeatmap />
 
       <div className="grid grid-cols-4 gap-4">
         <div className="card text-center"><p className="text-3xl font-bold text-blue-500">{counts.total}</p><p className="text-sm text-gray-500 mt-1">总题数</p></div>

@@ -45,6 +45,14 @@ export const api = {
 
   getProblemActivity: (id: number) => request<ActivityLogEntry[]>(`/problems/${id}/activity`),
 
+  getProblemNotes: (id: number) => request<{ notes: string; code: string }>(`/problems/${id}/notes`),
+
+  saveProblemNotes: (id: number, notes: string, code: string) =>
+    request<{ ok: boolean }>(`/problems/${id}/notes`, {
+      method: 'PUT',
+      body: JSON.stringify({ notes, code }),
+    }),
+
   getSettings: () => request<Settings>('/settings'),
 
   updateSettings: (data: Record<string, string | number>) =>

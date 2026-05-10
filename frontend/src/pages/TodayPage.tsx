@@ -3,6 +3,7 @@ import { api } from '../api/client'
 import { DiffBadge } from '../components/DiffBadge'
 import { Loading } from '../components/Loading'
 import { QualityButtons } from '../components/QualityButtons'
+import { ProblemNotesModal } from '../components/ProblemNotesModal'
 import { QuickReviewModal } from '../components/QuickReviewModal'
 import { RandomPickModal } from '../components/RandomPickModal'
 import { useToast } from '../components/Toast'
@@ -15,6 +16,7 @@ export function TodayPage() {
   const [expanded, setExpanded] = useState<number | null>(null)
   const [reviewModal, setReviewModal] = useState<ProblemPoolItem | null>(null)
   const [randomPool, setRandomPool] = useState<ProblemPoolItem[] | null>(null)
+  const [notesModal, setNotesModal] = useState<ProblemPoolItem | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -93,6 +95,12 @@ export function TodayPage() {
                 <QualityButtons onRate={(q) => handleRate(p.id, q)} />
                 <div className="flex gap-4 text-xs text-gray-400 mt-2">
                   <span>0-2: 不会</span><span>3: 勉强</span><span>4: 犹豫</span><span>5: 轻松</span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setNotesModal({ id: p.id, title: p.title, difficulty: p.difficulty }) }}
+                    className="text-emerald-500 hover:underline ml-auto"
+                  >
+                    写笔记
+                  </button>
                 </div>
               </div>
             )}
@@ -114,6 +122,9 @@ export function TodayPage() {
           onReview={(p) => setReviewModal(p)}
           onClose={() => setRandomPool(null)}
         />
+      )}
+      {notesModal && (
+        <ProblemNotesModal problem={notesModal} onClose={() => setNotesModal(null)} />
       )}
     </div>
   )
