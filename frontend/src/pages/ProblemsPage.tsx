@@ -1,0 +1,195 @@
+import { useEffect, useState } from 'react'
+import { api } from '../api/client'
+import { DiffBadge } from '../components/DiffBadge'
+import { StatusLabel } from '../components/StatusLabel'
+import { QuickReviewModal } from '../components/QuickReviewModal'
+import { ResetConfirmModal } from '../components/ResetConfirmModal'
+import { ProblemActivityModal } from '../components/ProblemActivityModal'
+import { RandomPickModal } from '../components/RandomPickModal'
+import { useToast } from '../components/Toast'
+import type { Problem, ProblemPoolItem } from '../types'
+
+export function ProblemsPage() {
+  const [problems, setProblems] = useState<Problem[]>([])
+  const [fStatus, setFStatus] = useState('')
+  const [fDiff, setFDiff] = useState('')
+  const [fCat, setFCat] = useState('')
+  const [showAdd, setShowAdd] = useState(false)
+  const [reviewModal, setReviewModal] = useState<ProblemPoolItem | null>(null)
+  const [resetModal, setResetModal] = useState<ProblemPoolItem | null>(null)
+  const [activityModal, setActivityModal] = useState<ProblemPoolItem | null>(null)
+  const [randomPool, setRandomPool] = useState<ProblemPoolItem[] | null>(null)
+  const [newTitle, setNewTitle] = useState('')
+  const [newDiff, setNewDiff] = useState('中等')
+  const [newCat, setNewCat] = useState('')
+  const [newUrl, setNewUrl] = useState('')
+  const { toast } = useToast()
+
+  useEffect(() => {
+    api.getProblems().then(setProblems).catch(e => toast(e.message, 'error'))
+  }, [])
+
+  const filtered = problems.filter(p =>
+    (!fStatus || p.status === fStatus) &&
+    (!fDiff || p.difficulty === fDiff) &&
+    (!fCat || p.category === fCat)
+  )
+
+  const categories = [...new Set(problems.map(p => p.category).filter(Boolean))] as string[]
+
+  const handleReview = async (id: number, quality: number) => {
+    try {
+      await api.review(id, quality)
+      toast(`已评分: ${quality}`)
+      const updated = await api.getProblems()
+      setProblems(updated)
+    } catch (e: any) { toast(e.message, 'error') }
+  }
+
+  const handleReset = async (id: number) => {
+    try {
+      await api.resetProblem(id)
+      toast('进度已重置')
+      const updated = await api.getProblems()
+      setProblems(updated)
+    } catch (e: any) { toast(e.message, 'error') }
+  }
+
+  const handleAdd = async () => {
+    if (!newTitle.trim()) return toast('请输入题目名称', 'error')
+    try {
+      await api.addProblem({ title: newTitle, difficulty: newDiff, category: newCat, url: newUrl })
+      toast('添加成功')
+      setShowAdd(false)
+      setNewTitle(''); setNewCat(''); setNewUrl('')
+      const updated = await api.getProblems()
+      setProblems(updated)
+    } catch (e: any) { toast(e.message, 'error') }
+  }
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('确定删除此题？')) return
+    try {
+      await api.deleteProblem(id)
+      toast('已删除')
+      const updated = await api.getProblems()
+      setProblems(updated)
+    } catch (e: any) { toast(e.message, 'error') }
+  }
+
+  return (
+    <div className="page-enter space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">题目总览</h2>
+        <div className="flex items-center gap-2">
+          {filtered.length > 0 && (
+            <button
+              onClick={() => setRandomPool(filtered.map(p => ({ id: p.id, title: p.title, difficulty: p.difficulty })))}
+              className="text-purple-500 text-sm hover:text-purple-700 hover:underline"
+            >
+              随机一题
+            </button>
+          )}
+          <button onClick={() => setShowAdd(!showAdd)} className="bg-blue-500 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-600 transition-colors">
+            + 添加题目
+          </button>
+        </div>
+      </div>
+
+      <div className="flex gap-2 flex-wrap">
+        <select value={fStatus} onChange={e => setFStatus(e.target.value)} className="border dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 rounded-md px-2 py-1 text-sm">
+          <option value="">全部状态</option>
+          <option value="new">未开始</option>
+          <option value="learning">学习中</option>
+          <option value="review">复习中</option>
+          <option value="mastered">已掌握</option>
+        </select>
+        <select value={fDiff} onChange={e => setFDiff(e.target.value)} className="border dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 rounded-md px-2 py-1 text-sm">
+          <option value="">全部难度</option>
+          <option value="简单">简单</option>
+          <option value="中等">中等</option>
+          <option value="困难">困难</option>
+        </select>
+        <select value={fCat} onChange={e => setFCat(e.target.value)} className="border dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 rounded-md px-2 py-1 text-sm">
+          <option value="">全部分类</option>
+          {categories.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </div>
+
+      <div className="text-sm text-gray-500 dark:text-gray-400">
+        筛选结果：<span className="font-semibold text-gray-700 dark:text-gray-200">{filtered.length}</span> 道题
+      </div>
+
+      {showAdd && (
+        <div className="card">
+          <h3 className="font-medium mb-3 text-gray-800 dark:text-gray-100">添加新题目</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <input value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="题目名称" className="border dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-400 rounded-md px-3 py-2 text-sm" />
+            <select value={newDiff} onChange={e => setNewDiff(e.target.value)} className="border dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 rounded-md px-3 py-2 text-sm">
+              <option value="简单">简单</option>
+              <option value="中等">中等</option>
+              <option value="困难">困难</option>
+            </select>
+            <input value={newCat} onChange={e => setNewCat(e.target.value)} placeholder="分类（可选）" className="border dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-400 rounded-md px-3 py-2 text-sm" />
+            <input value={newUrl} onChange={e => setNewUrl(e.target.value)} placeholder="LeetCode 链接（可选）" className="border dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-400 rounded-md px-3 py-2 text-sm" />
+          </div>
+          <div className="flex gap-2 mt-3">
+            <button onClick={handleAdd} className="bg-blue-500 text-white px-4 py-1.5 rounded-md text-sm hover:bg-blue-600 transition-colors">添加</button>
+            <button onClick={() => setShowAdd(false)} className="text-gray-500 dark:text-gray-400 px-4 py-1.5 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">取消</button>
+          </div>
+        </div>
+      )}
+
+      <div className="card p-0 overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400">
+            <tr>
+              <th className="px-4 py-2 text-left w-12">#</th>
+              <th className="px-4 py-2 text-left">题目</th>
+              <th className="px-4 py-2 text-left w-20">难度</th>
+              <th className="px-4 py-2 text-left w-24">分类</th>
+              <th className="px-4 py-2 text-left w-20">状态</th>
+              <th className="px-4 py-2 text-left w-28">下次复习</th>
+              <th className="px-4 py-2 text-left w-44">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map(p => (
+              <tr key={p.id} className="problem-row border-t dark:border-gray-700">
+                <td className="px-4 py-2 text-gray-400">{p.id}</td>
+                <td className="px-4 py-2 font-medium">
+                  <a href={`https://leetcode.cn/problemset/?search=${encodeURIComponent(p.title)}`} target="_blank" className="text-blue-600 hover:underline" rel="noreferrer">{p.title}</a>
+                </td>
+                <td className="px-4 py-2"><DiffBadge diff={p.difficulty} /></td>
+                <td className="px-4 py-2 text-gray-500 dark:text-gray-400 whitespace-nowrap">{p.category || '-'}</td>
+                <td className="px-4 py-2"><StatusLabel status={p.status} /></td>
+                <td className="px-4 py-2 text-gray-400 text-xs">{p.next_review || '-'}</td>
+                <td className="px-4 py-2 whitespace-nowrap">
+                  <button onClick={() => setReviewModal({ id: p.id, title: p.title, difficulty: p.difficulty })} className="text-blue-600 text-xs hover:underline">刷了</button>
+                  <button onClick={() => setActivityModal({ id: p.id, title: p.title, difficulty: p.difficulty })} className="text-gray-500 text-xs hover:underline ml-2">日志</button>
+                  <button onClick={() => setResetModal({ id: p.id, title: p.title, difficulty: p.difficulty })} className="text-amber-500 text-xs hover:underline ml-2">重置</button>
+                  {!p.is_preset && (
+                    <button onClick={() => handleDelete(p.id)} className="text-red-500 text-xs hover:underline ml-2">删除</button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {reviewModal && (
+        <QuickReviewModal problem={reviewModal} onRate={(q) => { handleReview(reviewModal.id, q); setReviewModal(null) }} onClose={() => setReviewModal(null)} />
+      )}
+      {resetModal && (
+        <ResetConfirmModal problem={resetModal} onConfirm={() => { handleReset(resetModal.id); setResetModal(null) }} onClose={() => setResetModal(null)} />
+      )}
+      {activityModal && (
+        <ProblemActivityModal problem={activityModal} onClose={() => setActivityModal(null)} />
+      )}
+      {randomPool && (
+        <RandomPickModal pool={randomPool} onReview={(p) => setReviewModal(p)} onClose={() => setRandomPool(null)} />
+      )}
+    </div>
+  )
+}

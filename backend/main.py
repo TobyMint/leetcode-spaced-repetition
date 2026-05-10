@@ -28,9 +28,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 静态文件
-STATIC_DIR = Path(__file__).parent / "static"
-app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+# 静态文件（Vite 构建产物）
+FRONTEND_DIST = Path(__file__).parent.parent / "frontend" / "dist"
+if FRONTEND_DIST.exists():
+    app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIST / "assets")), name="assets")
 
 
 # ---------- Pydantic Models ----------
@@ -52,11 +53,6 @@ class SettingsRequest(BaseModel):
 
 
 # ---------- Routes ----------
-
-@app.get("/")
-def index():
-    return FileResponse(str(STATIC_DIR / "index.html"))
-
 
 @app.get("/api/problems")
 def list_problems():
@@ -137,6 +133,15 @@ def get_settings():
 def update_settings(req: SettingsRequest):
     data = {k: v for k, v in req.model_dump().items() if v is not None}
     return database.update_settings(data)
+
+
+@app.get("/{full_path:path}")
+async def spa_fallback(full_path: str):
+    """SPA fallback — 所有非 API 路由返回 index.html。"""
+    index_path = FRONTEND_DIST / "index.html"
+    if index_path.exists():
+        return FileResponse(str(index_path))
+    return {"message": "Frontend not built. Run: cd frontend && npm run build"}
 
 
 if __name__ == "__main__":
