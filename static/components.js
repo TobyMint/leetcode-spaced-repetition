@@ -163,11 +163,12 @@ function showRandomPick(problems) {
         toast('没有可以推荐的题目', 'error');
         return;
     }
-    window._randomPool = problems;
-    const p = problems[Math.floor(Math.random() * problems.length)];
+    window.__randomPool = problems;
+    _pickOne(problems);
+}
 
-    // 对 title 中的特殊字符做简单转义
-    const safeTitle = p.title.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+function _pickOne(problems) {
+    const p = problems[Math.floor(Math.random() * problems.length)];
 
     document.body.insertAdjacentHTML('beforeend', `
         <div id="random-pick-overlay" class="modal-overlay fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onclick="if(event.target===this)closeRandomPick()">
@@ -176,15 +177,11 @@ function showRandomPick(problems) {
                 <a href="${leetcodeSearchUrl(p.title)}" target="_blank" onclick="closeRandomPick()" class="text-lg font-semibold text-blue-600 hover:underline">#${p.id} ${p.title}</a>
                 <div class="mt-2">${diffBadge(p.difficulty)}</div>
                 <div class="flex gap-2 justify-center mt-4">
-                    <button onclick="closeRandomPick();submitRandomReview(${p.id}, '${safeTitle}')" class="px-3 py-1.5 text-sm text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors">刷这个</button>
-                    <button onclick="closeRandomPick();showRandomPick(window._randomPool)" class="px-3 py-1.5 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">再换一个</button>
+                    <button onclick="closeRandomPick();showQuickReview(${p.id}, '${p.title.replace(/'/g, "\\'")}')" class="px-3 py-1.5 text-sm text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors">刷这个</button>
+                    <button onclick="closeRandomPick();_pickOne(window.__randomPool)" class="px-3 py-1.5 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">再换一个</button>
                 </div>
             </div>
         </div>`);
-}
-
-function submitRandomReview(id, title) {
-    showQuickReview(id, title);
 }
 
 function closeRandomPick() {

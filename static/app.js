@@ -16,6 +16,7 @@ const router = {
 async function renderToday() {
     const data = await api('/today');
     const all = [...data.new.map(p => ({ ...p, isNew: true })), ...data.review.map(p => ({ ...p, isNew: false }))];
+    window._todayPool = all.map(p => ({ id: p.id, title: p.title, difficulty: p.difficulty }));
 
     if (all.length === 0) {
         return `
@@ -31,7 +32,7 @@ async function renderToday() {
                 <h2 class="text-lg font-semibold text-gray-800">今日任务</h2>
                 <div class="flex items-center gap-3">
                     <span class="text-sm text-gray-500">${all.length} 道题</span>
-                    ${all.length > 0 ? `<button onclick="showRandomPick(${JSON.stringify(all.map(p => ({id: p.id, title: p.title, difficulty: p.difficulty})))})" class="text-sm text-purple-500 hover:text-purple-700 hover:underline">随机一题</button>` : ''}
+                    ${all.length > 0 ? `<button onclick="showRandomPick(window._todayPool)" class="text-sm text-purple-500 hover:text-purple-700 hover:underline">随机一题</button>` : ''}
                 </div>
             </div>
             ${all.map(p => renderTodayItem(p)).join('')}
@@ -103,13 +104,14 @@ window.filterState = { status: '', diff: '', category: '' };
 async function renderProblems() {
     const problems = await api('/problems');
     const filtered = filterProblems(problems);
+    window._randomPool = filtered.map(p => ({ id: p.id, title: p.title, difficulty: p.difficulty }));
 
     return `
         <div class="space-y-4">
             <div class="flex items-center justify-between">
                 <h2 class="text-lg font-semibold text-gray-800">题目总览</h2>
                 <div class="flex items-center gap-2">
-                    ${filtered.length > 0 ? `<button onclick="showRandomPick(${JSON.stringify(filtered.map(p => ({id: p.id, title: p.title, difficulty: p.difficulty})))})" class="text-purple-500 text-sm hover:text-purple-700 hover:underline">随机一题</button>` : ''}
+                    ${filtered.length > 0 ? `<button onclick="showRandomPick(window._randomPool)" class="text-purple-500 text-sm hover:text-purple-700 hover:underline">随机一题</button>` : ''}
                     <button onclick="showAddProblem()" class="bg-blue-500 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-600">+ 添加题目</button>
                 </div>
             </div>
