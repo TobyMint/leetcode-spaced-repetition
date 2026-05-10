@@ -18,6 +18,7 @@ export function TodayPage() {
   const [reviewModal, setReviewModal] = useState<ProblemPoolItem | null>(null)
   const [randomPool, setRandomPool] = useState<ProblemPoolItem[] | null>(null)
   const [notesModal, setNotesModal] = useState<ProblemPoolItem | null>(null)
+  const [submittingId, setSubmittingId] = useState<number | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -27,6 +28,8 @@ export function TodayPage() {
   const all = [...data.new.map(p => ({ ...p, isNew: true })), ...data.review.map(p => ({ ...p, isNew: false }))]
 
   const handleRate = async (id: number, quality: number) => {
+    if (submittingId !== null) return
+    setSubmittingId(id)
     try {
       const result = await api.review(id, quality)
       toast(`已评分: ${quality}`)
@@ -37,7 +40,7 @@ export function TodayPage() {
       })
     } catch (e: any) {
       toast(e.message, 'error')
-    }
+    } finally { setSubmittingId(null) }
   }
 
   if (loading) return <Loading />

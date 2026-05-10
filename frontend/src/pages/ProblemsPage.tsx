@@ -28,6 +28,7 @@ export function ProblemsPage() {
   const [newDiff, setNewDiff] = useState('中等')
   const [newCat, setNewCat] = useState('')
   const [newUrl, setNewUrl] = useState('')
+  const [submittingId, setSubmittingId] = useState<number | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -43,12 +44,15 @@ export function ProblemsPage() {
   const categories = [...new Set(problems.map(p => p.category).filter(Boolean))] as string[]
 
   const handleReview = async (id: number, quality: number) => {
+    if (submittingId !== null) return
+    setSubmittingId(id)
     try {
       await api.review(id, quality)
       toast(`已评分: ${quality}`)
       const updated = await api.getProblems()
       setProblems(updated)
     } catch (e: any) { toast(e.message, 'error') }
+    finally { setSubmittingId(null) }
   }
 
   const handleReset = async (id: number) => {
@@ -172,7 +176,11 @@ export function ProblemsPage() {
                 <td className="px-4 py-2"><StatusLabel status={p.status} /></td>
                 <td className="px-4 py-2 text-gray-400 text-xs whitespace-nowrap">{formatNextReview(p.next_review)}</td>
                 <td className="px-4 py-2 whitespace-nowrap">
-                  <button onClick={() => setReviewModal({ id: p.id, title: p.title, difficulty: p.difficulty })} className="text-blue-600 text-xs hover:underline">刷了</button>
+                  <button
+                    onClick={() => setReviewModal({ id: p.id, title: p.title, difficulty: p.difficulty })}
+                    disabled={submittingId === p.id}
+                    className="text-blue-600 text-xs hover:underline disabled:text-gray-400 disabled:cursor-not-allowed"
+                  >刷了</button>
                   <button onClick={() => setNotesModal({ id: p.id, title: p.title, difficulty: p.difficulty })} className="text-emerald-500 text-xs hover:underline ml-2">笔记</button>
                   <button onClick={() => setActivityModal({ id: p.id, title: p.title, difficulty: p.difficulty })} className="text-gray-500 text-xs hover:underline ml-2">日志</button>
                   <button onClick={() => setResetModal({ id: p.id, title: p.title, difficulty: p.difficulty })} className="text-amber-500 text-xs hover:underline ml-2">重置</button>
