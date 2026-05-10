@@ -182,6 +182,13 @@ def init_db() -> None:
         );
     """)
 
+    # 迁移：更新预置题目的 URL（兼容旧数据库无真实链接的情况）
+    for pid, _, _, _, slug in HOT_100:
+        conn.execute(
+            "UPDATE problems SET leetcode_url = ? WHERE id = ? AND is_preset = 1",
+            (f"https://leetcode.cn/problems/{slug}/", pid),
+        )
+
     # 迁移：为旧数据库添加 notes、code 列
     try:
         conn.execute("ALTER TABLE problem_state ADD COLUMN notes TEXT DEFAULT ''")
