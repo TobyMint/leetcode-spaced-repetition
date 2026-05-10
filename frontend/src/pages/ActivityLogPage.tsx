@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
+import { Loading } from '../components/Loading'
 import { useToast } from '../components/Toast'
 import type { ActivityLogEntry } from '../types'
 
@@ -12,11 +13,14 @@ const COLORS: Record<string, string> = {
 
 export function ActivityLogPage() {
   const [logs, setLogs] = useState<ActivityLogEntry[]>([])
+  const [loading, setLoading] = useState(true)
   const { toast } = useToast()
 
   useEffect(() => {
-    api.getActivityLog().then(setLogs).catch(e => toast(e.message, 'error'))
+    api.getActivityLog().then(setLogs).catch(e => toast(e.message, 'error')).finally(() => setLoading(false))
   }, [])
+
+  if (loading) return <Loading />
 
   return (
     <div className="page-enter space-y-4">

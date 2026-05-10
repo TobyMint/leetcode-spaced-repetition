@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
+import { Loading } from '../components/Loading'
 import { useToast } from '../components/Toast'
 import { DiffBadge } from '../components/DiffBadge'
 import type { Stats } from '../types'
 
 export function StatsPage() {
   const [stats, setStats] = useState<Stats | null>(null)
+  const [loading, setLoading] = useState(true)
   const { toast } = useToast()
 
   useEffect(() => {
-    api.getStats().then(setStats).catch(e => toast(e.message, 'error'))
+    api.getStats().then(setStats).catch(e => toast(e.message, 'error')).finally(() => setLoading(false))
   }, [])
 
+  if (loading) return <Loading />
   if (!stats) return null
 
   const { counts, today_reviewed, streak, daily, difficulty } = stats

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import { DiffBadge } from '../components/DiffBadge'
+import { Loading } from '../components/Loading'
 import { QualityButtons } from '../components/QualityButtons'
 import { QuickReviewModal } from '../components/QuickReviewModal'
 import { RandomPickModal } from '../components/RandomPickModal'
@@ -10,13 +11,14 @@ import type { Problem, ProblemPoolItem } from '../types'
 
 export function TodayPage() {
   const [data, setData] = useState<{ new: Problem[]; review: Problem[] }>({ new: [], review: [] })
+  const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<number | null>(null)
   const [reviewModal, setReviewModal] = useState<ProblemPoolItem | null>(null)
   const [randomPool, setRandomPool] = useState<ProblemPoolItem[] | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
-    api.getToday().then(setData).catch(e => toast(e.message, 'error'))
+    api.getToday().then(setData).catch(e => toast(e.message, 'error')).finally(() => setLoading(false))
   }, [])
 
   const all = [...data.new.map(p => ({ ...p, isNew: true })), ...data.review.map(p => ({ ...p, isNew: false }))]
@@ -34,6 +36,8 @@ export function TodayPage() {
       toast(e.message, 'error')
     }
   }
+
+  if (loading) return <Loading />
 
   return (
     <div className="page-enter space-y-3">

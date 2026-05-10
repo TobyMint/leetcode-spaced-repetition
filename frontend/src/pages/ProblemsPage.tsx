@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import { DiffBadge } from '../components/DiffBadge'
+import { Loading } from '../components/Loading'
 import { StatusLabel } from '../components/StatusLabel'
 import { QuickReviewModal } from '../components/QuickReviewModal'
 import { ResetConfirmModal } from '../components/ResetConfirmModal'
@@ -11,6 +12,7 @@ import type { Problem, ProblemPoolItem } from '../types'
 
 export function ProblemsPage() {
   const [problems, setProblems] = useState<Problem[]>([])
+  const [loading, setLoading] = useState(true)
   const [fStatus, setFStatus] = useState('')
   const [fDiff, setFDiff] = useState('')
   const [fCat, setFCat] = useState('')
@@ -26,7 +28,7 @@ export function ProblemsPage() {
   const { toast } = useToast()
 
   useEffect(() => {
-    api.getProblems().then(setProblems).catch(e => toast(e.message, 'error'))
+    api.getProblems().then(setProblems).catch(e => toast(e.message, 'error')).finally(() => setLoading(false))
   }, [])
 
   const filtered = problems.filter(p =>
@@ -76,6 +78,8 @@ export function ProblemsPage() {
       setProblems(updated)
     } catch (e: any) { toast(e.message, 'error') }
   }
+
+  if (loading) return <Loading />
 
   return (
     <div className="page-enter space-y-4">

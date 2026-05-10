@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
+import { Loading } from '../components/Loading'
 import { useToast } from '../components/Toast'
 
 export function SettingsPage() {
   const [settings, setSettings] = useState({ new_per_day: 3, max_review_per_day: 10, mastered_consecutive: 5, mastered_interval: 21 })
+  const [loading, setLoading] = useState(true)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -12,8 +14,10 @@ export function SettingsPage() {
       max_review_per_day: parseInt(s.max_review_per_day) || 10,
       mastered_consecutive: parseInt(s.mastered_consecutive) || 5,
       mastered_interval: parseInt(s.mastered_interval) || 21,
-    })).catch(() => {})
+    })).catch(() => {}).finally(() => setLoading(false))
   }, [])
+
+  if (loading) return <Loading />
 
   const save = async () => {
     try {
