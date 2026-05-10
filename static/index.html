@@ -1,28 +1,41 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LeetCode 遗忘曲线刷题</title>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+        // 页面加载前恢复暗色模式，避免闪烁
+        if (localStorage.getItem('dark') === '1') {
+            document.documentElement.classList.add('dark')
+        }
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/static/style.css">
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors">
     <!-- 导航栏 -->
-    <nav class="bg-white shadow-sm border-b">
+    <nav class="bg-white dark:bg-gray-800 shadow-sm border-b dark:border-gray-700 transition-colors">
         <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-            <h1 class="text-lg font-bold text-gray-800">LeetCode 遗忘曲线</h1>
-            <div class="flex gap-1">
-                <button onclick="router.go('today')" data-nav="today"
-                    class="nav-btn px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100">今日任务</button>
-                <button onclick="router.go('problems')" data-nav="problems"
-                    class="nav-btn px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100">题目总览</button>
-                <button onclick="router.go('stats')" data-nav="stats"
-                    class="nav-btn px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100">统计</button>
-                <button onclick="router.go('activity')" data-nav="activity"
-                    class="nav-btn px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100">活动日志</button>
-                <button onclick="router.go('settings')" data-nav="settings"
-                    class="nav-btn px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100">设置</button>
+            <h1 class="text-lg font-bold text-gray-800 dark:text-gray-100">LeetCode 遗忘曲线</h1>
+            <div class="flex items-center gap-3">
+                <div class="flex gap-1">
+                    <button onclick="router.go('today')" data-nav="today"
+                        class="nav-btn px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">今日任务</button>
+                    <button onclick="router.go('problems')" data-nav="problems"
+                        class="nav-btn px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">题目总览</button>
+                    <button onclick="router.go('stats')" data-nav="stats"
+                        class="nav-btn px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">统计</button>
+                    <button onclick="router.go('activity')" data-nav="activity"
+                        class="nav-btn px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">活动日志</button>
+                    <button onclick="router.go('settings')" data-nav="settings"
+                        class="nav-btn px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">设置</button>
+                </div>
+                <button onclick="toggleDark()" class="w-8 h-8 flex items-center justify-center rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="切换暗色模式">
+                    <svg id="dark-icon-moon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                    <svg id="dark-icon-sun" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                </button>
             </div>
         </div>
     </nav>

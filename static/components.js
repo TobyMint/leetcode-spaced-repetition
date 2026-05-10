@@ -2,6 +2,23 @@
 
 const API = '/api';
 
+// ── 暗色模式 ──
+function toggleDark() {
+    const html = document.documentElement;
+    const isDark = html.classList.toggle('dark');
+    localStorage.setItem('dark', isDark ? '1' : '0');
+    document.getElementById('dark-icon-moon').classList.toggle('hidden', isDark);
+    document.getElementById('dark-icon-sun').classList.toggle('hidden', !isDark);
+}
+
+// 页面加载时同步图标状态
+(function() {
+    if (localStorage.getItem('dark') === '1') {
+        document.getElementById('dark-icon-moon')?.classList.add('hidden');
+        document.getElementById('dark-icon-sun')?.classList.remove('hidden');
+    }
+})();
+
 // ── API 请求 ──
 async function api(path, opts = {}) {
     const res = await fetch(API + path, {
