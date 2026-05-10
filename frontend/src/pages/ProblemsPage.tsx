@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
-import { getLeetCodeUrl } from '../api/url'
+import { formatNextReview, getLeetCodeUrl } from '../api/url'
 import { DiffBadge } from '../components/DiffBadge'
 import { Loading } from '../components/Loading'
 import { StatusLabel } from '../components/StatusLabel'
@@ -170,7 +170,7 @@ export function ProblemsPage() {
                 <td className="px-4 py-2"><DiffBadge diff={p.difficulty} /></td>
                 <td className="px-4 py-2 text-gray-500 dark:text-gray-400 whitespace-nowrap">{p.category || '-'}</td>
                 <td className="px-4 py-2"><StatusLabel status={p.status} /></td>
-                <td className="px-4 py-2 text-gray-400 text-xs">{p.next_review || '-'}</td>
+                <td className="px-4 py-2 text-gray-400 text-xs whitespace-nowrap">{formatNextReview(p.next_review)}</td>
                 <td className="px-4 py-2 whitespace-nowrap">
                   <button onClick={() => setReviewModal({ id: p.id, title: p.title, difficulty: p.difficulty })} className="text-blue-600 text-xs hover:underline">刷了</button>
                   <button onClick={() => setNotesModal({ id: p.id, title: p.title, difficulty: p.difficulty })} className="text-emerald-500 text-xs hover:underline ml-2">笔记</button>
