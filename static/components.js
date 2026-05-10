@@ -98,3 +98,44 @@ function showResetConfirm(id, title) {
 function closeResetConfirm() {
     document.querySelector('.modal-overlay')?.remove();
 }
+
+// ── 单题活动日志弹窗 ──
+async function showProblemActivity(id, title) {
+    const logs = await api(`/problems/${id}/activity`);
+
+    const actionLabels = { review: '复习评分', add: '添加题目', reset: '重置进度' };
+    const actionColors = {
+        review: 'text-blue-600 bg-blue-50',
+        add: 'text-green-600 bg-green-50',
+        reset: 'text-orange-600 bg-orange-50',
+    };
+
+    const logHtml = logs.length === 0
+        ? '<p class="text-gray-400 text-sm text-center py-4">暂无记录</p>'
+        : logs.map(log => {
+            const date = new Date(log.created_at);
+            const timeStr = date.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+            return `
+                <div class="flex items-center gap-2 text-sm py-2 border-b border-gray-100 last:border-0">
+                    <span class="text-xs text-gray-400 w-24 shrink-0">${timeStr}</span>
+                    <span class="text-xs px-1.5 py-0.5 rounded ${actionColors[log.action] || 'text-gray-600 bg-gray-100'}">${actionLabels[log.action] || log.action}</span>
+                    <span class="text-gray-500 text-xs">${log.detail || ''}</span>
+                </div>`;
+        }).join('');
+
+    document.body.insertAdjacentHTML('beforeend', `
+        <div id="problem-activity-overlay" class="modal-overlay fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onclick="if(event.target===this)closeProblemActivity()">
+            <div class="modal-box bg-white rounded-xl p-6 w-96 max-h-96 overflow-y-auto shadow-2xl" onclick="event.stopPropagation()">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-semibold text-gray-800">#${id} ${title}</h3>
+                    <button onclick="closeProblemActivity()" class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+                </div>
+                <p class="text-xs text-gray-400 mb-3">操作记录</p>
+                ${logHtml}
+            </div>
+        </div>`);
+}
+
+function closeProblemActivity() {
+    document.getElementById('problem-activity-overlay')?.remove();
+}

@@ -118,6 +118,11 @@ def activity_log():
     return database.get_activity_log()
 
 
+@app.get("/api/problems/{problem_id}/activity")
+def problem_activity(problem_id: int):
+    return database.get_problem_activity(problem_id)
+
+
 @app.get("/api/calendar")
 def calendar():
     return database.get_calendar_data()

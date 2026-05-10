@@ -160,7 +160,7 @@ async function renderProblems() {
                             <th class="px-4 py-2 text-left w-24">分类</th>
                             <th class="px-4 py-2 text-left w-20">状态</th>
                             <th class="px-4 py-2 text-left w-28">下次复习</th>
-                            <th class="px-4 py-2 text-left w-36">操作</th>
+                            <th class="px-4 py-2 text-left w-40">操作</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -174,6 +174,7 @@ async function renderProblems() {
                                 <td class="px-4 py-2 text-gray-400 text-xs">${p.next_review || '-'}</td>
                                 <td class="px-4 py-2 whitespace-nowrap">
                                     <button onclick="showQuickReview(${p.id}, \`${p.title}\`)" class="text-blue-600 text-xs hover:underline btn-hover-lift">刷了</button>
+                                    <button onclick="showProblemActivity(${p.id}, \`${p.title}\`)" class="text-gray-500 text-xs hover:underline ml-2">日志</button>
                                     <button onclick="showResetConfirm(${p.id}, \`${p.title}\`)" class="text-amber-500 text-xs hover:underline ml-2">重置</button>
                                     ${!p.is_preset ? `<button onclick="deleteProblem(${p.id})" class="text-red-500 text-xs hover:underline ml-2">删除</button>` : ''}
                                 </td>

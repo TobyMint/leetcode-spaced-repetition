@@ -529,3 +529,17 @@ def get_activity_log(limit: int = 200) -> list[dict]:
     """, (limit,)).fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+def get_problem_activity(problem_id: int, limit: int = 50) -> list[dict]:
+    """获取特定题目的活动日志。"""
+    conn = get_conn()
+    rows = conn.execute("""
+        SELECT a.id, a.action, a.detail, a.created_at
+        FROM activity_log a
+        WHERE a.problem_id = ?
+        ORDER BY a.created_at DESC
+        LIMIT ?
+    """, (problem_id, limit)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
