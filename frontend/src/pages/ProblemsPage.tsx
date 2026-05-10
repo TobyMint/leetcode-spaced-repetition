@@ -47,10 +47,10 @@ export function ProblemsPage() {
     if (submittingId !== null) return
     setSubmittingId(id)
     try {
-      await api.review(id, quality)
+      const result = await api.review(id, quality)
       toast(`已评分: ${quality}`)
-      const updated = await api.getProblems()
-      setProblems(updated)
+      setProblems(prev => prev.map(p => p.id === id ? { ...p, status: result.status as Problem['status'], next_review: result.next_review, ef: result.ef, interval_days: result.interval, consecutive_correct: result.consecutive } : p))
+      api.getProblems().then(setProblems)
     } catch (e: any) { toast(e.message, 'error') }
     finally { setSubmittingId(null) }
   }
