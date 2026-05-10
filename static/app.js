@@ -1,40 +1,4 @@
-/* LeetCode 遗忘曲线 — 前端 SPA */
-
-const API = '/api';
-
-// ---------- 工具函数 ----------
-async function api(path, opts = {}) {
-    const res = await fetch(API + path, {
-        headers: { 'Content-Type': 'application/json' },
-        ...opts,
-    });
-    if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: res.statusText }));
-        throw new Error(err.detail || 'Request failed');
-    }
-    return res.json();
-}
-
-function toast(msg, type = 'success') {
-    const el = document.createElement('div');
-    el.className = `toast toast-${type}`;
-    el.textContent = msg;
-    document.body.appendChild(el);
-    setTimeout(() => el.remove(), 3000);
-}
-
-function leetcodeSearchUrl(title) {
-    return `https://leetcode.cn/problemset/?search=${encodeURIComponent(title)}`;
-}
-
-function diffBadge(diff) {
-    return `<span class="diff-${diff} px-2 py-0.5 rounded text-xs font-medium">${diff}</span>`;
-}
-
-function statusLabel(status) {
-    const map = { new: '未开始', learning: '学习中', review: '复习中', mastered: '已掌握' };
-    return `<span class="status-${status} px-2 py-0.5 rounded text-xs whitespace-nowrap">${map[status] || status}</span>`;
-}
+/* LeetCode 遗忘曲线 — 前端 SPA（页面渲染 + 业务逻辑） */
 
 // ---------- 路由 ----------
 const router = {
@@ -106,10 +70,6 @@ function renderTodayItem(p) {
                 </div>
             </div>
         </div>`;
-}
-
-function qualityDesc(q) {
-    return ['完全不记得','看到答案才想起来','勉强回忆','勉强答对','答对但犹豫','轻松答对'][q];
 }
 
 function toggleExpand(id) {
@@ -268,79 +228,6 @@ async function deleteProblem(id) {
     }
 }
 
-function showQuickReview(id, title) {
-    const html = `
-        <div id="quick-review-overlay" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onclick="if(event.target===this)closeQuickReview()">
-            <div class="bg-white rounded-xl p-6 w-80 shadow-lg" onclick="event.stopPropagation()">
-                <p class="font-medium text-gray-800 mb-1">#${id} ${title}</p>
-                <p class="text-sm text-gray-500 mb-3">这道题做得怎么样？</p>
-                <div class="flex gap-2 mb-3">
-                    ${[0,1,2,3,4,5].map(q => `
-                        <button class="quality-btn q${q}" onclick="quickReviewAndClose(${id}, ${q})" title="${qualityDesc(q)}">${q}</button>
-                    `).join('')}
-                </div>
-                <div class="flex gap-3 text-xs text-gray-400">
-                    <span>0-2: 不会</span>
-                    <span>3: 勉强</span>
-                    <span>4: 犹豫</span>
-                    <span>5: 轻松</span>
-                </div>
-            </div>
-        </div>`;
-    document.body.insertAdjacentHTML('beforeend', html);
-}
-
-function closeQuickReview() {
-    document.getElementById('quick-review-overlay')?.remove();
-}
-
-async function quickReviewAndClose(id, quality) {
-    try {
-        await api(`/review/${id}`, {
-            method: 'POST',
-            body: JSON.stringify({ quality }),
-        });
-        toast(`#${id} 已评分: ${quality} - ${qualityDesc(quality)}`);
-        closeQuickReview();
-        render();
-    } catch (e) {
-        toast(e.message, 'error');
-    }
-}
-
-function showResetConfirm(id, title) {
-    const html = `
-        <div class="modal-overlay fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onclick="if(event.target===this)closeResetConfirm()">
-            <div class="modal-box bg-white rounded-xl p-6 w-96 shadow-2xl" onclick="event.stopPropagation()">
-                <div class="flex items-center gap-2 mb-3">
-                    <span class="text-2xl">⚠️</span>
-                    <h3 class="text-lg font-semibold text-gray-800">确认重置</h3>
-                </div>
-                <p class="text-sm text-gray-600 mb-2">确定要重置 <strong>#${id} ${title}</strong> 的学习进度吗？</p>
-                <p class="text-xs text-red-500 mb-4">这将清除所有复习记录和间隔数据，题目回到"未开始"状态。</p>
-                <div class="flex gap-2 justify-end">
-                    <button onclick="closeResetConfirm()" class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">取消</button>
-                    <button onclick="resetProgress(${id})" class="px-4 py-2 text-sm text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors">确认重置</button>
-                </div>
-            </div>
-        </div>`;
-    document.body.insertAdjacentHTML('beforeend', html);
-}
-
-function closeResetConfirm() {
-    document.querySelector('.modal-overlay')?.remove();
-}
-
-async function resetProgress(id) {
-    try {
-        await api(`/problems/${id}/reset`, { method: 'POST' });
-        toast(`#${id} 进度已重置`);
-        closeResetConfirm();
-        render();
-    } catch (e) {
-        toast(e.message, 'error');
-    }
-}
 
 // ---------- 页面：统计 ----------
 async function renderStats() {
