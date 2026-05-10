@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-cd "$(dirname "$0")/frontend" && npm install --silent && npm run build
-cd "$(dirname "$0")"
-uv run uvicorn main:app --app-dir backend --host 0.0.0.0 --port 19999
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR/frontend" && npm install --silent && npm run build
+cd "$SCRIPT_DIR"
+uv run uvicorn main:app --app-dir "$SCRIPT_DIR/backend" --host 0.0.0.0 --port 19999
