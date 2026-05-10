@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
+import { getLeetCodeUrl } from '../api/url'
 import { DiffBadge } from '../components/DiffBadge'
 import { Loading } from '../components/Loading'
 import { StatusLabel } from '../components/StatusLabel'
@@ -164,7 +165,7 @@ export function ProblemsPage() {
               <tr key={p.id} className="problem-row border-t dark:border-gray-700">
                 <td className="px-4 py-2 text-gray-400">{p.id}</td>
                 <td className="px-4 py-2 font-medium">
-                  <a href={`https://leetcode.cn/problemset/?search=${encodeURIComponent(p.title)}`} target="_blank" className="text-blue-600 hover:underline" rel="noreferrer">{p.title}</a>
+                  <a href={getLeetCodeUrl(p.title, p.leetcode_url)} target="_blank" className="text-blue-600 hover:underline" rel="noreferrer">{p.title}</a>
                 </td>
                 <td className="px-4 py-2"><DiffBadge diff={p.difficulty} /></td>
                 <td className="px-4 py-2 text-gray-500 dark:text-gray-400 whitespace-nowrap">{p.category || '-'}</td>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
+import { getLeetCodeUrl } from '../api/url'
 import { Loading } from '../components/Loading'
 import { useToast } from '../components/Toast'
 import type { ActivityLogEntry } from '../types'
@@ -44,7 +45,7 @@ export function ActivityLogPage() {
                     {LABELS[log.action] || log.action}
                   </span>
                   <a
-                    href={`https://leetcode.cn/problemset/?search=${encodeURIComponent(log.title || '')}`}
+                    href={getLeetCodeUrl(log.title || '')}
                     target="_blank"
                     className="text-sm font-medium text-blue-600 hover:underline"
                     rel="noreferrer"

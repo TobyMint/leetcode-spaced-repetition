@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
+import { getLeetCodeUrl } from '../api/url'
 import { DiffBadge } from '../components/DiffBadge'
 import { Loading } from '../components/Loading'
 import { QualityButtons } from '../components/QualityButtons'
@@ -73,7 +74,7 @@ export function TodayPage() {
               <div className="flex items-center gap-3">
                 <span className="text-gray-400 text-sm w-8">#{p.id}</span>
                 <a
-                  href={`https://leetcode.cn/problemset/?search=${encodeURIComponent(p.title)}`}
+                  href={getLeetCodeUrl(p.title, p.leetcode_url)}
                   target="_blank"
                   onClick={e => e.stopPropagation()}
                   className="font-medium text-blue-600 hover:underline"

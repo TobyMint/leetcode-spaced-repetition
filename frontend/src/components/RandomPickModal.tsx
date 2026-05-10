@@ -1,8 +1,7 @@
 import { useState } from 'react'
+import { getLeetCodeUrl } from '../api/url'
 import { DiffBadge } from './DiffBadge'
 import type { ProblemPoolItem } from '../types'
-
-const LEETCODE_SEARCH = 'https://leetcode.cn/problemset/?search='
 
 interface Props {
   pool: ProblemPoolItem[]
@@ -22,7 +21,7 @@ export function RandomPickModal({ pool, onReview, onClose }: Props) {
       <div className="modal-box bg-white dark:bg-gray-800 rounded-xl p-6 w-80 shadow-2xl text-center" onClick={e => e.stopPropagation()}>
         <p className="text-gray-400 dark:text-gray-500 text-sm mb-2">随机推荐</p>
         <a
-          href={LEETCODE_SEARCH + encodeURIComponent(current.title)}
+          href={getLeetCodeUrl(current.title)}
           target="_blank"
           onClick={onClose}
           className="text-lg font-semibold text-blue-600 hover:underline"
