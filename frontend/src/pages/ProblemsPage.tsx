@@ -179,13 +179,20 @@ export function ProblemsPage() {
                   <button
                     onClick={() => setReviewModal({ id: p.id, title: p.title, difficulty: p.difficulty })}
                     disabled={submittingId === p.id}
-                    className="text-blue-600 text-xs hover:underline disabled:text-gray-400 disabled:cursor-not-allowed"
+                    className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >刷了</button>
-                  <button onClick={() => setNotesModal({ id: p.id, title: p.title, difficulty: p.difficulty })} className="text-emerald-500 text-xs hover:underline ml-2">笔记</button>
-                  <button onClick={() => setActivityModal({ id: p.id, title: p.title, difficulty: p.difficulty })} className="text-gray-500 text-xs hover:underline ml-2">日志</button>
-                  <button onClick={() => setResetModal({ id: p.id, title: p.title, difficulty: p.difficulty })} className="text-amber-500 text-xs hover:underline ml-2">重置</button>
+                  <button
+                    onClick={() => setNotesModal({ id: p.id, title: p.title, difficulty: p.difficulty })}
+                    className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md transition-colors ml-1.5 ${
+                      p.notes
+                        ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:hover:bg-emerald-900/60 ring-1 ring-emerald-300 dark:ring-emerald-700'
+                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600'
+                    }`}
+                  >笔记</button>
+                  <button onClick={() => setActivityModal({ id: p.id, title: p.title, difficulty: p.difficulty })} className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 transition-colors ml-1.5">日志</button>
+                  <button onClick={() => setResetModal({ id: p.id, title: p.title, difficulty: p.difficulty })} className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md bg-gray-100 text-amber-600 hover:bg-amber-100 dark:bg-gray-700 dark:text-amber-400 dark:hover:bg-gray-600 transition-colors ml-1.5">重置</button>
                   {!p.is_preset && (
-                    <button onClick={() => handleDelete(p.id)} className="text-red-500 text-xs hover:underline ml-2">删除</button>
+                    <button onClick={() => handleDelete(p.id)} className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md bg-gray-100 text-red-500 hover:bg-red-100 dark:bg-gray-700 dark:text-red-400 dark:hover:bg-red-900/30 transition-colors ml-1.5">删除</button>
                   )}
                 </td>
               </tr>
