@@ -214,7 +214,7 @@ export function ProblemsPage() {
         <ProblemNotesModal problem={notesModal} onClose={() => setNotesModal(null)} />
       )}
       {randomPool && (
-        <RandomPickModal pool={randomPool} onReview={(p) => setReviewModal(p)} onNotes={(p) => setNotesModal(p)} onClose={() => setRandomPool(null)} />
+        <RandomPickModal pool={randomPool} onReview={(p) => setReviewModal(p)} onClose={() => setRandomPool(null)} />
       )}
     </div>
   )

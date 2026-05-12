@@ -7,3 +7,5 @@ venv/
 frontend/node_modules/
 frontend/dist/
 .pytest_cache/
+
+_temp_image/
