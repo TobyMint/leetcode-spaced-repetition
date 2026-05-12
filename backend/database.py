@@ -30,7 +30,7 @@ HOT_100 = [
     (13, "最大子数组和", "中等", "子数组", "maximum-subarray"),
     (14, "合并区间", "中等", "区间", "merge-intervals"),
     (15, "轮转数组", "中等", "数组", "rotate-array"),
-    (16, "除自身以外数组的乘积", "中等", "数组", "product-of-array-except-self"),
+    (16, "除了自身以外数组的乘积", "中等", "数组", "product-of-array-except-self"),
     (17, "缺失的第一个正数", "困难", "数组", "first-missing-positive"),
     (18, "矩阵置零", "中等", "矩阵", "set-matrix-zeroes"),
     (19, "螺旋矩阵", "中等", "矩阵", "spiral-matrix"),
