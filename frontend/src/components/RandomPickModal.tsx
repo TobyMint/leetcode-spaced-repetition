@@ -45,7 +45,7 @@ export function RandomPickModal({ pool, onReview, onNotes, onClose }: Props) {
             再换一个
           </button>
           <button
-            onClick={() => { onNotes(current); onClose() }}
+            onClick={() => onNotes(current)}
             className="px-3 py-1.5 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
           >
             笔记
