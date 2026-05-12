@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import Callable
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
@@ -133,6 +134,50 @@ def get_conn() -> sqlite3.Connection:
     return conn
 
 
+def _get_db_version(conn: sqlite3.Connection) -> int:
+    row = conn.execute("SELECT value FROM db_meta WHERE key = 'version'").fetchone()
+    return int(row["value"]) if row else 0
+
+
+def _set_db_version(conn: sqlite3.Connection, version: int) -> None:
+    conn.execute("INSERT OR REPLACE INTO db_meta (key, value) VALUES ('version', ?)", (str(version),))
+
+
+def _migrate_v1(conn: sqlite3.Connection) -> None:
+    """迁移：更新预置题目的 URL（兼容旧数据库无真实链接的情况）。"""
+    for pid, _, _, _, slug in HOT_100:
+        conn.execute(
+            "UPDATE problems SET leetcode_url = ? WHERE id = ? AND is_preset = 1",
+            (f"https://leetcode.cn/problems/{slug}/", pid),
+        )
+    conn.commit()
+
+
+def _migrate_v2(conn: sqlite3.Connection) -> None:
+    """迁移：为旧数据库添加 notes、code 列。"""
+    for col in ("notes", "code"):
+        try:
+            conn.execute(f"ALTER TABLE problem_state ADD COLUMN {col} TEXT DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass
+    conn.commit()
+
+
+def _migrate_v3(conn: sqlite3.Connection) -> None:
+    """迁移：修正题目名称。"""
+    conn.execute(
+        "UPDATE problems SET title = '除了自身以外数组的乘积' WHERE id = 16 AND title = '除自身以外数组的乘积'"
+    )
+    conn.commit()
+
+
+MIGRATIONS: list[tuple[int, Callable[[sqlite3.Connection], None]]] = [
+    (1, _migrate_v1),
+    (2, _migrate_v2),
+    (3, _migrate_v3),
+]
+
+
 def init_db() -> None:
     """初始化数据库，建表并导入 Hot 100 数据。"""
     conn = get_conn()
@@ -180,24 +225,12 @@ def init_db() -> None:
             created_at TEXT NOT NULL,
             FOREIGN KEY (problem_id) REFERENCES problems(id)
         );
+
+        CREATE TABLE IF NOT EXISTS db_meta (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        );
     """)
-
-    # 迁移：更新预置题目的 URL（兼容旧数据库无真实链接的情况）
-    for pid, _, _, _, slug in HOT_100:
-        conn.execute(
-            "UPDATE problems SET leetcode_url = ? WHERE id = ? AND is_preset = 1",
-            (f"https://leetcode.cn/problems/{slug}/", pid),
-        )
-
-    # 迁移：为旧数据库添加 notes、code 列
-    try:
-        conn.execute("ALTER TABLE problem_state ADD COLUMN notes TEXT DEFAULT ''")
-    except sqlite3.OperationalError:
-        pass
-    try:
-        conn.execute("ALTER TABLE problem_state ADD COLUMN code TEXT DEFAULT ''")
-    except sqlite3.OperationalError:
-        pass
 
     # 检查是否已导入 Hot 100
     count = conn.execute("SELECT COUNT(*) FROM problems WHERE is_preset = 1").fetchone()[0]
@@ -219,6 +252,13 @@ def init_db() -> None:
             "INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)",
             (key, value),
         )
+
+    # 执行待处理的 migration
+    current = _get_db_version(conn)
+    for version, migrate_fn in MIGRATIONS:
+        if version > current:
+            migrate_fn(conn)
+            _set_db_version(conn, version)
 
     conn.commit()
     conn.close()
