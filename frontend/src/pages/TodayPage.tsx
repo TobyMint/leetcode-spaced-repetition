@@ -5,7 +5,6 @@ import { DiffBadge } from '../components/DiffBadge'
 import { Loading } from '../components/Loading'
 import { QualityButtons } from '../components/QualityButtons'
 import { ProblemNotesModal } from '../components/ProblemNotesModal'
-import { QuickReviewModal } from '../components/QuickReviewModal'
 import { RandomPickModal } from '../components/RandomPickModal'
 import { useToast } from '../components/Toast'
 import { ChevronDown } from 'lucide-react'
@@ -15,7 +14,6 @@ export function TodayPage() {
   const [data, setData] = useState<{ new: Problem[]; review: Problem[] }>({ new: [], review: [] })
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<number | null>(null)
-  const [reviewModal, setReviewModal] = useState<ProblemPoolItem | null>(null)
   const [randomPool, setRandomPool] = useState<ProblemPoolItem[] | null>(null)
   const [notesModal, setNotesModal] = useState<ProblemPoolItem | null>(null)
   const [submittingId, setSubmittingId] = useState<number | null>(null)
@@ -112,18 +110,10 @@ export function TodayPage() {
         ))
       )}
 
-      {reviewModal && (
-        <QuickReviewModal
-          problem={reviewModal}
-          onRate={(q) => { handleRate(reviewModal.id, q); setReviewModal(null) }}
-          onClose={() => setReviewModal(null)}
-        />
-      )}
-
       {randomPool && (
         <RandomPickModal
           pool={randomPool}
-          onReview={(p) => setReviewModal(p)}
+          onReview={(p, q) => { handleRate(p.id, q); setRandomPool(null) }}
           onClose={() => setRandomPool(null)}
         />
       )}

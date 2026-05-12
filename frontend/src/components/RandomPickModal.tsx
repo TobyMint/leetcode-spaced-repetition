@@ -5,6 +5,7 @@ import { githubGist } from 'react-syntax-highlighter/dist/esm/styles/hljs'
 import { api } from '../api/client'
 import { getLeetCodeUrl } from '../api/url'
 import { DiffBadge } from './DiffBadge'
+import { QualityButtons } from './QualityButtons'
 import { useToast } from './Toast'
 import type { ProblemPoolItem } from '../types'
 
@@ -12,7 +13,7 @@ SyntaxHighlighter.registerLanguage('python', python)
 
 interface Props {
   pool: ProblemPoolItem[]
-  onReview: (p: ProblemPoolItem) => void
+  onReview: (p: ProblemPoolItem, quality: number) => void
   onClose: () => void
 }
 
@@ -49,10 +50,8 @@ export function RandomPickModal({ pool, onReview, onClose }: Props) {
     finally { setSaving(false) }
   }
 
-  const handleDoProblem = () => {
-    window.open(getLeetCodeUrl(current.title, current.leetcode_url), '_blank')
-    onReview(current)
-    onClose()
+  const handleRate = (quality: number) => {
+    onReview(current, quality)
   }
 
   const handleOverlayClick = () => {
@@ -71,20 +70,20 @@ export function RandomPickModal({ pool, onReview, onClose }: Props) {
           <a
             href={getLeetCodeUrl(current.title, current.leetcode_url)}
             target="_blank"
-            onClick={onClose}
             className="text-lg font-semibold text-blue-600 hover:underline"
             rel="noreferrer"
           >
             #{current.id} {current.title}
           </a>
           <div className="mt-2"><DiffBadge diff={current.difficulty} /></div>
-          <div className="flex gap-2 justify-center mt-4">
-            <button
-              onClick={handleDoProblem}
-              className="px-3 py-1.5 text-sm text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors"
-            >
-              刷这个
-            </button>
+
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-4 mb-2">做完后给自己打分：</p>
+          <QualityButtons onRate={handleRate} />
+          <div className="flex gap-3 text-xs text-gray-400 mb-4 justify-center">
+            <span>0-2: 不会</span><span>3: 勉强</span><span>4: 犹豫</span><span>5: 轻松</span>
+          </div>
+
+          <div className="flex gap-2 justify-center">
             <button
               onClick={() => setCurrent(pickOne(pool))}
               className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
@@ -155,22 +154,23 @@ export function RandomPickModal({ pool, onReview, onClose }: Props) {
                 />
               )}
             </div>
+
+            {/* Rating in notes view */}
+            <div className="border-t dark:border-gray-700 pt-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">做完后给自己打分：</p>
+              <QualityButtons onRate={handleRate} />
+              <div className="flex gap-3 text-xs text-gray-400 mt-1">
+                <span>0-2: 不会</span><span>3: 勉强</span><span>4: 犹豫</span><span>5: 轻松</span>
+              </div>
+            </div>
           </div>
 
           {/* Footer */}
-          <div className="flex gap-2 justify-between px-6 pb-5 pt-3 border-t dark:border-gray-700">
-            <button
-              onClick={handleDoProblem}
-              className="px-4 py-2 text-sm text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors"
-            >
-              刷这个
+          <div className="flex gap-2 justify-end px-6 pb-5 pt-3 border-t dark:border-gray-700">
+            <button onClick={() => setView('pick')} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">返回</button>
+            <button onClick={handleSave} disabled={saving} className="px-4 py-2 text-sm text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50">
+              {saving ? '保存中...' : '保存'}
             </button>
-            <div className="flex gap-2">
-              <button onClick={() => setView('pick')} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">返回</button>
-              <button onClick={handleSave} disabled={saving} className="px-4 py-2 text-sm text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50">
-                {saving ? '保存中...' : '保存'}
-              </button>
-            </div>
           </div>
         </div>
       )}
