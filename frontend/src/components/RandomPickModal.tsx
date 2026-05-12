@@ -32,7 +32,7 @@ export function RandomPickModal({ pool, onReview, onClose }: Props) {
         <div className="mt-2"><DiffBadge diff={current.difficulty} /></div>
         <div className="flex gap-2 justify-center mt-4">
           <button
-            onClick={() => { onReview(current); onClose() }}
+            onClick={() => { window.open(getLeetCodeUrl(current.title, current.leetcode_url), '_blank'); onReview(current); onClose() }}
             className="px-3 py-1.5 text-sm text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors"
           >
             刷这个
