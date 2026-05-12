@@ -56,4 +56,5 @@ export interface ProblemPoolItem {
   id: number
   title: string
   difficulty: string
+  leetcode_url?: string | null
 }

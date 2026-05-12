@@ -95,8 +95,8 @@ export function ProblemsPage() {
         <div className="flex items-center gap-2">
           {filtered.length > 0 && (
             <button
-              onClick={() => setRandomPool(filtered.map(p => ({ id: p.id, title: p.title, difficulty: p.difficulty })))}
-              className="text-purple-500 text-sm hover:text-purple-700 hover:underline"
+              onClick={() => setRandomPool(filtered.map(p => ({ id: p.id, title: p.title, difficulty: p.difficulty, leetcode_url: p.leetcode_url })))}
+              className="px-3 py-1.5 text-sm font-medium text-purple-700 bg-purple-50 rounded-md hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-300 dark:hover:bg-purple-900/50 transition-colors"
             >
               随机一题
             </button>
