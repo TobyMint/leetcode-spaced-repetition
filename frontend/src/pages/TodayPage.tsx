@@ -124,6 +124,7 @@ export function TodayPage() {
         <RandomPickModal
           pool={randomPool}
           onReview={(p) => setReviewModal(p)}
+          onNotes={(p) => setNotesModal(p)}
           onClose={() => setRandomPool(null)}
         />
       )}
