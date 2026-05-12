@@ -6,6 +6,7 @@ import type { ProblemPoolItem } from '../types'
 interface Props {
   pool: ProblemPoolItem[]
   onReview: (p: ProblemPoolItem) => void
+  onNotes: (p: ProblemPoolItem) => void
   onClose: () => void
 }
 
@@ -13,7 +14,7 @@ function pickOne(pool: ProblemPoolItem[]): ProblemPoolItem {
   return pool[Math.floor(Math.random() * pool.length)]
 }
 
-export function RandomPickModal({ pool, onReview, onClose }: Props) {
+export function RandomPickModal({ pool, onReview, onNotes, onClose }: Props) {
   const [current, setCurrent] = useState(() => pickOne(pool))
 
   return (
@@ -42,6 +43,12 @@ export function RandomPickModal({ pool, onReview, onClose }: Props) {
             className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
           >
             再换一个
+          </button>
+          <button
+            onClick={() => { onNotes(current); onClose() }}
+            className="px-3 py-1.5 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
+          >
+            笔记
           </button>
         </div>
       </div>
