@@ -69,7 +69,8 @@ def _update_ef(ef: float, quality: int) -> float:
     return max(1.3, new_ef)
 
 
-def get_status(consecutive: int, interval: float, ef: float) -> str:
+def get_status(consecutive: int, interval: float, ef: float,
+               mastered_consecutive: int = 5) -> str:
     """根据复习状态判断题目阶段。
 
     Returns:
@@ -77,6 +78,6 @@ def get_status(consecutive: int, interval: float, ef: float) -> str:
     """
     if consecutive == 0 and interval == 0:
         return "new"
-    if consecutive >= 5 and interval >= 21:
+    if consecutive >= mastered_consecutive:
         return "mastered"
     return "review" if consecutive >= 1 else "learning"

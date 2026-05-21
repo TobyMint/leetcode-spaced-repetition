@@ -49,7 +49,6 @@ export interface Settings {
   new_per_day: string
   max_review_per_day: string
   mastered_consecutive: string
-  mastered_interval: string
 }
 
 export interface ProblemPoolItem {

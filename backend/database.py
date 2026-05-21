@@ -345,7 +345,11 @@ def submit_review(problem_id: int, quality: int) -> dict:
         consecutive=row["consecutive_correct"],
     )
     new_state = calculate_next_review(state, quality, now)
-    new_status = get_status(new_state.consecutive, new_state.interval, new_state.ef)
+    settings = get_settings()
+    new_status = get_status(
+        new_state.consecutive, new_state.interval, new_state.ef,
+        mastered_consecutive=int(settings.get("mastered_consecutive", 5)),
+    )
 
     # 更新状态
     conn.execute("""
