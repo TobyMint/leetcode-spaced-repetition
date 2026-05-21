@@ -1,15 +1,9 @@
-import { useEffect, useState } from 'react'
-import { Light as SyntaxHighlighter } from 'react-syntax-highlighter'
-import python from 'react-syntax-highlighter/dist/esm/languages/hljs/python'
-import { githubGist } from 'react-syntax-highlighter/dist/esm/styles/hljs'
-import { api } from '../api/client'
+import { useState } from 'react'
 import { getLeetCodeUrl } from '../api/url'
 import { DiffBadge } from './DiffBadge'
+import { NotesEditor } from './NotesEditor'
 import { QualityButtons } from './QualityButtons'
-import { useToast } from './Toast'
 import type { ProblemPoolItem } from '../types'
-
-SyntaxHighlighter.registerLanguage('python', python)
 
 interface Props {
   pool: ProblemPoolItem[]
@@ -26,29 +20,6 @@ function pickOne(pool: ProblemPoolItem[]): ProblemPoolItem {
 export function RandomPickModal({ pool, onReview, onClose }: Props) {
   const [current, setCurrent] = useState(() => pickOne(pool))
   const [view, setView] = useState<View>('pick')
-  const [notes, setNotes] = useState('')
-  const [code, setCode] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [preview, setPreview] = useState(false)
-  const { toast } = useToast()
-
-  useEffect(() => {
-    if (view === 'notes') {
-      api.getProblemNotes(current.id).then(d => {
-        setNotes(d.notes || '')
-        setCode(d.code || '')
-      }).catch(() => {})
-    }
-  }, [view, current.id])
-
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      await api.saveProblemNotes(current.id, notes, code)
-      toast('笔记已保存')
-    } catch (e: any) { toast(e.message, 'error') }
-    finally { setSaving(false) }
-  }
 
   const handleRate = (quality: number) => {
     onReview(current, quality)
@@ -100,7 +71,6 @@ export function RandomPickModal({ pool, onReview, onClose }: Props) {
         </div>
       ) : (
         <div className="modal-box bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
-          {/* Header */}
           <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b dark:border-gray-700">
             <div className="flex items-center gap-3">
               <button
@@ -114,48 +84,12 @@ export function RandomPickModal({ pool, onReview, onClose }: Props) {
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none">&times;</button>
           </div>
 
-          {/* Body */}
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">解题笔记</label>
-              <textarea
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                rows={5}
-                placeholder="记录解题思路、易错点、复杂度分析..."
-                className="w-full border dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-400 rounded-lg px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">代码</label>
-                <button
-                  onClick={() => setPreview(!preview)}
-                  className="text-xs text-blue-500 hover:underline"
-                >
-                  {preview ? '编辑' : '预览高亮'}
-                </button>
-              </div>
-              {preview ? (
-                <div className="rounded-lg overflow-hidden border dark:border-gray-600 text-sm">
-                  <SyntaxHighlighter language="python" style={githubGist} customStyle={{ margin: 0, borderRadius: '0.5rem', fontSize: '0.8125rem' }}>
-                    {code || '# 还没有代码'}
-                  </SyntaxHighlighter>
-                </div>
-              ) : (
-                <textarea
-                  value={code}
-                  onChange={e => setCode(e.target.value)}
-                  rows={12}
-                  placeholder="# Python 代码&#10;def solution():&#10;    pass"
-                  className="w-full border dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-400 rounded-lg px-3 py-2 text-sm font-mono resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}
-                />
-              )}
-            </div>
-
-            {/* Rating in notes view */}
+          <NotesEditor
+            problem={current}
+            extraFooterButton={
+              <button onClick={() => setView('pick')} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">返回</button>
+            }
+          >
             <div className="border-t dark:border-gray-700 pt-4">
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">做完后给自己打分：</p>
               <QualityButtons onRate={handleRate} />
@@ -163,15 +97,7 @@ export function RandomPickModal({ pool, onReview, onClose }: Props) {
                 <span>0-2: 不会</span><span>3: 勉强</span><span>4: 犹豫</span><span>5: 轻松</span>
               </div>
             </div>
-          </div>
-
-          {/* Footer */}
-          <div className="flex gap-2 justify-end px-6 pb-5 pt-3 border-t dark:border-gray-700">
-            <button onClick={() => setView('pick')} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">返回</button>
-            <button onClick={handleSave} disabled={saving} className="px-4 py-2 text-sm text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50">
-              {saving ? '保存中...' : '保存'}
-            </button>
-          </div>
+          </NotesEditor>
         </div>
       )}
     </div>
