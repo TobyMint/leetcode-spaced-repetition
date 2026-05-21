@@ -17,7 +17,7 @@ export function ProblemNotesModal({ problem, onClose }: Props) {
   const [notes, setNotes] = useState('')
   const [code, setCode] = useState('')
   const [saving, setSaving] = useState(false)
-  const [preview, setPreview] = useState(false)
+  const [preview, setPreview] = useState(true)
   const { toast } = useToast()
 
   useEffect(() => {

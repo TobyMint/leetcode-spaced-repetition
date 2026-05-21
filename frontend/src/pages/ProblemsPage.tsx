@@ -36,7 +36,7 @@ export function ProblemsPage() {
   }, [])
 
   const filtered = problems.filter(p =>
-    (!fStatus || p.status === fStatus) &&
+    (!fStatus || (fStatus === 'not_mastered' ? p.status !== 'mastered' : p.status === fStatus)) &&
     (!fDiff || p.difficulty === fDiff) &&
     (!fCat || p.category === fCat)
   )
@@ -114,6 +114,7 @@ export function ProblemsPage() {
           <option value="learning">学习中</option>
           <option value="review">复习中</option>
           <option value="mastered">已掌握</option>
+          <option value="not_mastered">未掌握</option>
         </select>
         <select value={fDiff} onChange={e => setFDiff(e.target.value)} className="border dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 rounded-md px-2 py-1 text-sm">
           <option value="">全部难度</option>
