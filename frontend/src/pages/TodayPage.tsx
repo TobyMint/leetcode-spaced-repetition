@@ -51,7 +51,7 @@ export function TodayPage() {
           <span className="text-sm text-gray-500">{all.length} 道题</span>
           {all.length > 0 && (
             <button
-              onClick={() => setRandomPool(all.map(p => ({ id: p.id, title: p.title, difficulty: p.difficulty })))}
+              onClick={() => setRandomPool(all.map(p => ({ id: p.id, title: p.title, difficulty: p.difficulty, leetcode_url: p.leetcode_url })))}
               className="text-sm text-purple-500 hover:text-purple-700 hover:underline"
             >
               随机一题
