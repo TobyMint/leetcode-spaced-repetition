@@ -12,13 +12,15 @@ interface Props {
   totalReviews?: number
 }
 
-export function CompetenceLabel({ avgQuality = 0, totalReviews = 0 }: Props) {
+export function CompetenceLabel({ avgQuality, totalReviews }: Props) {
+  const total = Number(totalReviews) || 0
+  const avg = Number(avgQuality) || 0
   const key = useMemo(() => {
-    if (totalReviews === 0) return 'new'
-    if (avgQuality < 2.5) return 'weak'
-    if (avgQuality < 4.0) return 'medium'
+    if (total === 0) return 'new'
+    if (avg < 2.5) return 'weak'
+    if (avg < 4.0) return 'medium'
     return 'strong'
-  }, [avgQuality, totalReviews])
+  }, [total, avg])
 
   const c = CONFIG[key]
   return (

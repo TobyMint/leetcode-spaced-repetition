@@ -182,16 +182,19 @@ def _migrate_v4(conn: sqlite3.Connection) -> None:
             pass
 
     # 旧数据库的状态映射：把旧 status 转成 competence 相关字段
-    # status='new' → round=0, total_reviews=0, avg_quality=0（默认值，不变）
-    # status='learning'/'review'/'mastered' → 给一个初始 round=0
     # 已掌握（mastered）的题给一个较高的初始 avg_quality
     conn.execute("""
-        UPDATE problem_state SET avg_quality = 4.5, round = 0
-        WHERE status = 'mastered' AND total_reviews = 0
+        UPDATE problem_state SET avg_quality = 4.5
+        WHERE status = 'mastered' AND (total_reviews IS NULL OR total_reviews = 0)
+    """)
+    # 所有旧行补默认值（含 ALTER TABLE 后遗留的 NULL）
+    conn.execute("""
+        UPDATE problem_state SET round = 0, total_reviews = 0
+        WHERE round IS NULL OR total_reviews IS NULL
     """)
     conn.execute("""
-        UPDATE problem_state SET round = 0
-        WHERE status IN ('learning', 'review') AND total_reviews = 0
+        UPDATE problem_state SET avg_quality = 0.0
+        WHERE avg_quality IS NULL
     """)
 
     # 清理旧设置，写入新设置
@@ -202,11 +205,20 @@ def _migrate_v4(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
+def _migrate_v5(conn: sqlite3.Connection) -> None:
+    """迁移：兜底修复 v4 遗留的 NULL 值。"""
+    conn.execute("UPDATE problem_state SET round = 0 WHERE round IS NULL")
+    conn.execute("UPDATE problem_state SET total_reviews = 0 WHERE total_reviews IS NULL")
+    conn.execute("UPDATE problem_state SET avg_quality = 0.0 WHERE avg_quality IS NULL")
+    conn.commit()
+
+
 MIGRATIONS: list[tuple[int, Callable[[sqlite3.Connection], None]]] = [
     (1, _migrate_v1),
     (2, _migrate_v2),
     (3, _migrate_v3),
     (4, _migrate_v4),
+    (5, _migrate_v5),
 ]
 
 

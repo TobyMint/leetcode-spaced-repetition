@@ -17,19 +17,29 @@ export function TodayPage() {
   const [quota, setQuota] = useState(7)
   const [doneToday, setDoneToday] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [reloading, setReloading] = useState(false)
   const [expanded, setExpanded] = useState<number | null>(null)
   const [randomPool, setRandomPool] = useState<ProblemPoolItem[] | null>(null)
   const [notesModal, setNotesModal] = useState<ProblemPoolItem | null>(null)
   const [submittingId, setSubmittingId] = useState<number | null>(null)
   const { toast } = useToast()
 
-  const load = useCallback(() => {
+  const load = useCallback((showReloading = false) => {
+    if (showReloading) setReloading(true)
     api.getToday().then(d => {
-      setQueue(d.queue)
+      setQueue(prev => {
+        // 合并：保留当前队列中不在服务端队列的题目（已评分被移除的不会出现）
+        const sIds = new Set(d.queue.map((q: TodayQueueItem) => q.id))
+        const kept = prev.filter(p => !sIds.has(p.id))
+        return [...kept, ...d.queue]
+      })
       setGlobalRound(d.global_round)
       setQuota(d.quota)
       setDoneToday(d.done_today)
-    }).catch(e => toast(e.message, 'error')).finally(() => setLoading(false))
+    }).catch(e => toast(e.message, 'error')).finally(() => {
+      setLoading(false)
+      setReloading(false)
+    })
   }, [])
 
   useEffect(() => { load() }, [load])
@@ -40,22 +50,23 @@ export function TodayPage() {
     try {
       await api.review(id, quality)
       toast(`已评分: ${quality}`)
-      // 乐观更新：立即从队列移除，再异步刷新补足空缺
+      // 立即从队列移除，不再自动补题
       setQueue(prev => prev.filter(item => item.id !== id))
       setDoneToday(prev => prev + 1)
       setExpanded(null)
-      load()
     } catch (e: any) { toast(e.message, 'error') }
     finally { setSubmittingId(null) }
   }
 
   if (loading) return <Loading />
 
-  const remaining = quota - doneToday
+  const remaining = Math.max(0, quota - doneToday)
+  const exceeded = doneToday >= quota
+  const allDone = queue.length === 0
 
   return (
     <div className="page-enter space-y-3">
-      {/* 轮次进度条 */}
+      {/* 进度条 */}
       <div className="card space-y-2">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
@@ -69,26 +80,39 @@ export function TodayPage() {
             style={{ width: `${Math.min(100, (doneToday / quota) * 100)}%` }}
           />
         </div>
-        {remaining > 0 ? (
-          <p className="text-xs text-gray-400">今日还剩 {remaining} 道，加油 🔥</p>
-        ) : doneToday >= quota && queue.length > 0 ? (
-          <p className="text-xs text-emerald-500">今日任务已完成！还有余力可以继续刷 👏</p>
-        ) : queue.length === 0 ? (
-          <p className="text-xs text-gray-400">🎉 当前队列已清空，暂时没有待刷题目</p>
-        ) : null}
+        {allDone ? (
+          exceeded ? (
+            <p className="text-xs text-emerald-500">今日任务已完成 👏 明天继续</p>
+          ) : (
+            <p className="text-xs text-gray-400">当前轮次所有待刷题都已处理，等待复习间隔到期</p>
+          )
+        ) : (
+          <p className="text-xs text-gray-400">
+            {exceeded ? '已超额完成！' : `今日还剩 ${remaining} 道`}
+          </p>
+        )}
       </div>
 
       {/* 题目列表 */}
-      {queue.length === 0 ? (
+      {allDone ? (
         <div className="card text-center py-12">
-          <p className="text-gray-400 dark:text-gray-500 text-lg">暂时没有待刷的题目</p>
-          <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">
-            所有题目都在复习间隔中，稍后再来看
+          <p className="text-gray-400 dark:text-gray-500 text-lg">
+            {exceeded ? '今日任务完成 ✅' : '暂时没有待刷的题目'}
           </p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">
+            {exceeded ? '已经刷够了，明天继续加油！' : '所有题目都在复习间隔中，稍后再来'}
+          </p>
+          <button
+            onClick={() => load(true)}
+            disabled={reloading}
+            className="mt-4 px-4 py-1.5 text-sm text-blue-500 bg-blue-50 dark:bg-blue-900/30 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 disabled:opacity-50 transition-colors"
+          >
+            {reloading ? '加载中...' : '查看更多题目'}
+          </button>
         </div>
       ) : (
         queue.map(p => (
-          <div key={p.id} className={`card problem-row ${p.round >= globalRound ? 'opacity-70' : ''}`} id={`problem-${p.id}`}>
+          <div key={p.id} className="card problem-row" id={`problem-${p.id}`}>
             <div
               className="flex items-center justify-between cursor-pointer"
               onClick={() => setExpanded(expanded === p.id ? null : p.id)}
