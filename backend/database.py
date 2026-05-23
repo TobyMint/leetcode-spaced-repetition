@@ -7,7 +7,7 @@ from collections.abc import Callable
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-from sm2 import SM2State, calculate_next_review, get_status
+from scheduler import next_review_after, ema_quality, competence
 
 # 优先使用项目根目录的数据库（旧位置兼容），其次 backend/ 下
 _ROOT_DB = Path(__file__).parent.parent / "leetcode_100.db"
@@ -120,10 +120,8 @@ HOT_100 = [
 
 # 默认设置
 DEFAULT_SETTINGS = {
-    "new_per_day": "3",
-    "max_review_per_day": "10",
-    "mastered_consecutive": "5",
-    "mastered_interval": "21",
+    "daily_quota": "7",
+    "global_round": "1",
 }
 
 
@@ -171,10 +169,44 @@ def _migrate_v3(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
+def _migrate_v4(conn: sqlite3.Connection) -> None:
+    """迁移：轮次+优先级调度，替换 SM-2 字段。"""
+    for col, col_type in [
+        ("round", "INTEGER DEFAULT 0"),
+        ("total_reviews", "INTEGER DEFAULT 0"),
+        ("avg_quality", "REAL DEFAULT 0.0"),
+    ]:
+        try:
+            conn.execute(f"ALTER TABLE problem_state ADD COLUMN {col} {col_type}")
+        except sqlite3.OperationalError:
+            pass
+
+    # 旧数据库的状态映射：把旧 status 转成 competence 相关字段
+    # status='new' → round=0, total_reviews=0, avg_quality=0（默认值，不变）
+    # status='learning'/'review'/'mastered' → 给一个初始 round=0
+    # 已掌握（mastered）的题给一个较高的初始 avg_quality
+    conn.execute("""
+        UPDATE problem_state SET avg_quality = 4.5, round = 0
+        WHERE status = 'mastered' AND total_reviews = 0
+    """)
+    conn.execute("""
+        UPDATE problem_state SET round = 0
+        WHERE status IN ('learning', 'review') AND total_reviews = 0
+    """)
+
+    # 清理旧设置，写入新设置
+    conn.execute("DELETE FROM settings WHERE key IN ('new_per_day', 'max_review_per_day', 'mastered_consecutive', 'mastered_interval')")
+    for key, value in [("daily_quota", "7"), ("global_round", "1")]:
+        conn.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", (key, value))
+
+    conn.commit()
+
+
 MIGRATIONS: list[tuple[int, Callable[[sqlite3.Connection], None]]] = [
     (1, _migrate_v1),
     (2, _migrate_v2),
     (3, _migrate_v3),
+    (4, _migrate_v4),
 ]
 
 
@@ -201,6 +233,9 @@ def init_db() -> None:
             last_reviewed TEXT,
             notes TEXT DEFAULT '',
             code TEXT DEFAULT '',
+            round INTEGER DEFAULT 0,
+            total_reviews INTEGER DEFAULT 0,
+            avg_quality REAL DEFAULT 0.0,
             FOREIGN KEY (problem_id) REFERENCES problems(id)
         );
 
@@ -240,7 +275,6 @@ def init_db() -> None:
             "VALUES (?, ?, ?, ?, ?, 1)",
             [(pid, title, diff, cat, f"https://leetcode.cn/problems/{slug}/") for pid, title, diff, cat, slug in HOT_100],
         )
-        # 为每道题初始化状态
         conn.executemany(
             "INSERT OR IGNORE INTO problem_state (problem_id) VALUES (?)",
             [(pid,) for pid, _, _, _, _ in HOT_100],
@@ -269,8 +303,8 @@ def get_all_problems() -> list[dict]:
     conn = get_conn()
     rows = conn.execute("""
         SELECT p.id, p.title, p.difficulty, p.category, p.leetcode_url, p.is_preset,
-               s.status, s.ef, s.consecutive_correct, s.interval_days,
-               s.next_review, s.last_reviewed, s.notes, s.code
+               s.next_review, s.last_reviewed, s.notes, s.code,
+               s.round, s.total_reviews, s.avg_quality
         FROM problems p
         LEFT JOIN problem_state s ON p.id = s.problem_id
         ORDER BY p.id
@@ -283,8 +317,8 @@ def get_problem(problem_id: int) -> dict | None:
     conn = get_conn()
     row = conn.execute("""
         SELECT p.id, p.title, p.difficulty, p.category, p.leetcode_url, p.is_preset,
-               s.status, s.ef, s.consecutive_correct, s.interval_days,
-               s.next_review, s.last_reviewed, s.notes, s.code
+               s.next_review, s.last_reviewed, s.notes, s.code,
+               s.round, s.total_reviews, s.avg_quality
         FROM problems p
         LEFT JOIN problem_state s ON p.id = s.problem_id
         WHERE p.id = ?
@@ -293,36 +327,48 @@ def get_problem(problem_id: int) -> dict | None:
     return dict(row) if row else None
 
 
-def get_today_problems(new_per_day: int = 3, max_review: int = 10) -> dict:
-    """获取今日待刷题目。返回 {'new': [...], 'review': [...]}。"""
+def get_today_problems(daily_quota: int = 7) -> dict:
+    """获取今日待刷题目：先本轮的未做题，再到期复习题，弱题优先。"""
     now = datetime.now().isoformat()
     conn = get_conn()
 
-    # 新题
-    new_problems = conn.execute("""
-        SELECT p.id, p.title, p.difficulty, p.category
-        FROM problems p
-        JOIN problem_state s ON p.id = s.problem_id
-        WHERE s.status = 'new'
-        ORDER BY p.id
-        LIMIT ?
-    """, (new_per_day,)).fetchall()
+    global_round = int(_get_setting(conn, "global_round", "1"))
 
-    # 到期复习题（按小时粒度比较）
-    review_problems = conn.execute("""
-        SELECT p.id, p.title, p.difficulty, p.category
+    # 本轮未做过（round < global_round）且在队列中（next_review <= now 或从未做过）的题目
+    # 按 avg_quality 升序（弱题优先），next_review 升序
+    rows = conn.execute("""
+        SELECT p.id, p.title, p.difficulty, p.category, p.leetcode_url,
+               s.next_review, s.round, s.total_reviews, s.avg_quality
         FROM problems p
         JOIN problem_state s ON p.id = s.problem_id
-        WHERE s.status != 'new' AND s.next_review IS NOT NULL AND s.next_review <= ?
-        ORDER BY s.next_review
+        WHERE (s.next_review IS NULL OR s.next_review <= ?)
+        ORDER BY
+            CASE WHEN s.round < ? THEN 0 ELSE 1 END,
+            s.avg_quality ASC,
+            s.next_review ASC NULLS FIRST
         LIMIT ?
-    """, (now, max_review)).fetchall()
+    """, (now, global_round, daily_quota)).fetchall()
 
     conn.close()
+
+    queue = [dict(r) for r in rows]
     return {
-        "new": [dict(r) for r in new_problems],
-        "review": [dict(r) for r in review_problems],
+        "queue": queue,
+        "global_round": global_round,
+        "quota": daily_quota,
+        "done_today": _today_done_count(),
     }
+
+
+def _today_done_count() -> int:
+    conn = get_conn()
+    now = datetime.now()
+    cnt = conn.execute(
+        "SELECT COUNT(DISTINCT problem_id) FROM reviews WHERE reviewed_at >= ? AND reviewed_at < ?",
+        (now.strftime("%Y-%m-%dT00:00:00"), (now + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00")),
+    ).fetchone()[0]
+    conn.close()
+    return cnt
 
 
 def submit_review(problem_id: int, quality: int) -> dict:
@@ -330,62 +376,83 @@ def submit_review(problem_id: int, quality: int) -> dict:
     conn = get_conn()
     now = datetime.now()
 
-    # 当前状态
     row = conn.execute(
-        "SELECT ef, consecutive_correct, interval_days FROM problem_state WHERE problem_id = ?",
+        "SELECT avg_quality, total_reviews FROM problem_state WHERE problem_id = ?",
         (problem_id,),
     ).fetchone()
     if not row:
         conn.close()
         raise ValueError(f"Problem {problem_id} not found")
 
-    state = SM2State(
-        ef=row["ef"],
-        interval=row["interval_days"],
-        consecutive=row["consecutive_correct"],
-    )
-    new_state = calculate_next_review(state, quality, now)
-    settings = get_settings()
-    new_status = get_status(
-        new_state.consecutive, new_state.interval, new_state.ef,
-        mastered_consecutive=int(settings.get("mastered_consecutive", 5)),
-    )
+    old_avg = row["avg_quality"] or 0.0
+    old_total = row["total_reviews"] or 0
 
-    # 更新状态
+    new_avg = ema_quality(old_avg, quality)
+    new_total = old_total + 1
+    new_next = next_review_after(quality, now)
+    global_round = int(_get_setting(conn, "global_round", "1"))
+
     conn.execute("""
         UPDATE problem_state SET
-            status = ?,
-            ef = ?,
-            consecutive_correct = ?,
-            interval_days = ?,
+            avg_quality = ?,
+            total_reviews = ?,
             next_review = ?,
-            last_reviewed = ?
+            last_reviewed = ?,
+            round = ?
         WHERE problem_id = ?
-    """, (
-        new_status, new_state.ef, new_state.consecutive,
-        new_state.interval, new_state.next_review.isoformat(), now.isoformat(),
-        problem_id,
-    ))
+    """, (new_avg, new_total, new_next.isoformat(), now.isoformat(), global_round, problem_id))
 
     # 记录复习
     conn.execute(
         "INSERT INTO reviews (problem_id, reviewed_at, quality) VALUES (?, ?, ?)",
-        (problem_id, datetime.now().isoformat(), quality),
+        (problem_id, now.isoformat(), quality),
     )
     conn.execute(
         "INSERT INTO activity_log (problem_id, action, detail, created_at) VALUES (?, 'review', ?, ?)",
-        (problem_id, f"评分 {quality}", datetime.now().isoformat()),
+        (problem_id, f"评分 {quality}", now.isoformat()),
     )
+
+    # 检查本轮是否完成
+    _check_round_complete(conn, global_round)
 
     conn.commit()
     conn.close()
 
     return {
-        "status": new_status,
-        "next_review": new_state.next_review.isoformat(),
-        "ef": round(new_state.ef, 2),
-        "interval": new_state.interval,
-        "consecutive": new_state.consecutive,
+        "competence": competence(new_avg, new_total),
+        "next_review": new_next.isoformat(),
+        "avg_quality": new_avg,
+        "total_reviews": new_total,
+        "round": global_round,
+    }
+
+
+def _check_round_complete(conn: sqlite3.Connection, global_round: int) -> None:
+    """检查当前轮是否全部完成，是则进入下一轮。"""
+    total = conn.execute("SELECT COUNT(*) FROM problems").fetchone()[0]
+    done = conn.execute(
+        "SELECT COUNT(*) FROM problem_state WHERE round = ?", (global_round,)
+    ).fetchone()[0]
+    if done >= total:
+        conn.execute(
+            "UPDATE settings SET value = ? WHERE key = 'global_round'",
+            (str(global_round + 1),),
+        )
+
+
+def get_round_progress() -> dict:
+    """获取当前轮次进度。"""
+    conn = get_conn()
+    global_round = int(_get_setting(conn, "global_round", "1"))
+    total = conn.execute("SELECT COUNT(*) FROM problems").fetchone()[0]
+    done = conn.execute(
+        "SELECT COUNT(*) FROM problem_state WHERE round = ?", (global_round,)
+    ).fetchone()[0]
+    conn.close()
+    return {
+        "global_round": global_round,
+        "done": done,
+        "total": total,
     }
 
 
@@ -413,11 +480,10 @@ def add_problem(title: str, difficulty: str, category: str = "", url: str = "") 
 def delete_problem(problem_id: int) -> bool:
     """删除用户添加的题目（预置题目不可删除）。"""
     conn = get_conn()
-    row = conn.execute("SELECT is_preset, title FROM problems WHERE id = ?", (problem_id,)).fetchone()
+    row = conn.execute("SELECT is_preset FROM problems WHERE id = ?", (problem_id,)).fetchone()
     if not row or row["is_preset"]:
         conn.close()
         return False
-    title = row["title"]
     conn.execute("DELETE FROM activity_log WHERE problem_id = ?", (problem_id,))
     conn.execute("DELETE FROM reviews WHERE problem_id = ?", (problem_id,))
     conn.execute("DELETE FROM problem_state WHERE problem_id = ?", (problem_id,))
@@ -431,14 +497,27 @@ def get_stats() -> dict:
     """统计数据。"""
     conn = get_conn()
 
-    # 各状态计数
-    counts = {}
-    for status in ("new", "learning", "review", "mastered"):
-        row = conn.execute(
-            "SELECT COUNT(*) FROM problem_state WHERE status = ?", (status,)
-        ).fetchone()
-        counts[status] = row[0]
-    counts["total"] = sum(counts.values())
+    # 掌握程度分布
+    comp_counts = {}
+    for c_level in ("new", "weak", "medium", "strong"):
+        if c_level == "new":
+            cnt = conn.execute(
+                "SELECT COUNT(*) FROM problem_state WHERE total_reviews = 0"
+            ).fetchone()[0]
+        elif c_level == "weak":
+            cnt = conn.execute(
+                "SELECT COUNT(*) FROM problem_state WHERE total_reviews > 0 AND avg_quality < 2.5"
+            ).fetchone()[0]
+        elif c_level == "medium":
+            cnt = conn.execute(
+                "SELECT COUNT(*) FROM problem_state WHERE total_reviews > 0 AND avg_quality >= 2.5 AND avg_quality < 4.0"
+            ).fetchone()[0]
+        else:
+            cnt = conn.execute(
+                "SELECT COUNT(*) FROM problem_state WHERE total_reviews > 0 AND avg_quality >= 4.0"
+            ).fetchone()[0]
+        comp_counts[c_level] = cnt
+    comp_counts["total"] = sum(comp_counts.values())
 
     # 今日复习数
     now = datetime.now()
@@ -459,7 +538,7 @@ def get_stats() -> dict:
         ORDER BY day
     """).fetchall()
 
-    # 各难度完成率
+    # 各难度覆盖
     difficulty_stats = {}
     for diff in ("简单", "中等", "困难"):
         total = conn.execute(
@@ -468,18 +547,28 @@ def get_stats() -> dict:
         done = conn.execute("""
             SELECT COUNT(*) FROM problems p
             JOIN problem_state s ON p.id = s.problem_id
-            WHERE p.difficulty = ? AND s.status IN ('review', 'mastered')
+            WHERE p.difficulty = ? AND s.total_reviews > 0
         """, (diff,)).fetchone()[0]
         difficulty_stats[diff] = {"total": total, "done": done}
+
+    # 轮次进度
+    global_round = int(_get_setting(conn, "global_round", "1"))
+    round_total = conn.execute("SELECT COUNT(*) FROM problems").fetchone()[0]
+    round_done = conn.execute(
+        "SELECT COUNT(*) FROM problem_state WHERE round = ?", (global_round,)
+    ).fetchone()[0]
 
     conn.close()
 
     return {
-        "counts": counts,
+        "counts": comp_counts,
         "today_reviewed": today_count,
         "streak": streak,
         "daily": [dict(r) for r in daily],
         "difficulty": difficulty_stats,
+        "global_round": global_round,
+        "round_done": round_done,
+        "round_total": round_total,
     }
 
 
@@ -500,7 +589,7 @@ def _calc_streak(conn: sqlite3.Connection) -> int:
         row_date = date.fromisoformat(row["day"])
         if row_date == current:
             streak += 1
-            current = current.replace(day=current.day) - __import__("datetime").timedelta(days=1)
+            current = current - timedelta(days=1)
         elif row_date < current:
             break
 
@@ -524,6 +613,11 @@ def get_calendar_data() -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def _get_setting(conn: sqlite3.Connection, key: str, default: str = "") -> str:
+    row = conn.execute("SELECT value FROM settings WHERE key = ?", (key,)).fetchone()
+    return row["value"] if row else default
+
+
 def get_settings() -> dict:
     conn = get_conn()
     rows = conn.execute("SELECT key, value FROM settings").fetchall()
@@ -544,7 +638,7 @@ def update_settings(settings: dict) -> dict:
 
 
 def reset_progress(problem_id: int) -> bool:
-    """重置题目进度到未开始状态。"""
+    """重置题目进度。"""
     conn = get_conn()
     row = conn.execute("SELECT problem_id FROM problem_state WHERE problem_id = ?", (problem_id,)).fetchone()
     if not row:
@@ -552,10 +646,9 @@ def reset_progress(problem_id: int) -> bool:
         return False
     conn.execute("""
         UPDATE problem_state SET
-            status = 'new',
-            ef = 2.5,
-            consecutive_correct = 0,
-            interval_days = 0,
+            avg_quality = 0.0,
+            total_reviews = 0,
+            round = 0,
             next_review = NULL,
             last_reviewed = NULL
         WHERE problem_id = ?

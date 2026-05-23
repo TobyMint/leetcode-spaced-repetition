@@ -46,10 +46,7 @@ class AddProblemRequest(BaseModel):
     url: str = ""
 
 class SettingsRequest(BaseModel):
-    new_per_day: int | None = None
-    max_review_per_day: int | None = None
-    mastered_consecutive: int | None = None
-    mastered_interval: int | None = None
+    daily_quota: int | None = None
 
 class NotesRequest(BaseModel):
     notes: str = ""
@@ -74,9 +71,8 @@ def get_problem(problem_id: int):
 @app.get("/api/today")
 def today_problems():
     settings = database.get_settings()
-    new_per_day = int(settings.get("new_per_day", 3))
-    max_review = int(settings.get("max_review_per_day", 10))
-    return database.get_today_problems(new_per_day, max_review)
+    daily_quota = int(settings.get("daily_quota", 7))
+    return database.get_today_problems(daily_quota)
 
 
 @app.post("/api/review/{problem_id}")
@@ -111,6 +107,11 @@ def reset_problem(problem_id: int):
 @app.get("/api/stats")
 def stats():
     return database.get_stats()
+
+
+@app.get("/api/round")
+def round_progress():
+    return database.get_round_progress()
 
 
 @app.get("/api/activity")
