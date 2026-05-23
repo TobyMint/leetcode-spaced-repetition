@@ -3,7 +3,7 @@ import { api } from '../api/client'
 import { formatNextReview, getLeetCodeUrl } from '../api/url'
 import { DiffBadge } from '../components/DiffBadge'
 import { Loading } from '../components/Loading'
-import { StatusLabel } from '../components/StatusLabel'
+import { CompetenceLabel } from '../components/StatusLabel'
 import { QuickReviewModal } from '../components/QuickReviewModal'
 import { ResetConfirmModal } from '../components/ResetConfirmModal'
 import { ProblemActivityModal } from '../components/ProblemActivityModal'
@@ -12,10 +12,17 @@ import { RandomPickModal } from '../components/RandomPickModal'
 import { useToast } from '../components/Toast'
 import type { Problem, ProblemPoolItem } from '../types'
 
+function getCompetence(avgQuality: number, totalReviews: number): string {
+  if (totalReviews === 0) return 'new'
+  if (avgQuality < 2.5) return 'weak'
+  if (avgQuality < 4.0) return 'medium'
+  return 'strong'
+}
+
 export function ProblemsPage() {
   const [problems, setProblems] = useState<Problem[]>([])
   const [loading, setLoading] = useState(true)
-  const [fStatus, setFStatus] = useState('')
+  const [fComp, setFComp] = useState('')
   const [fDiff, setFDiff] = useState('')
   const [fCat, setFCat] = useState('')
   const [showAdd, setShowAdd] = useState(false)
@@ -35,11 +42,12 @@ export function ProblemsPage() {
     api.getProblems().then(setProblems).catch(e => toast(e.message, 'error')).finally(() => setLoading(false))
   }, [])
 
-  const filtered = problems.filter(p =>
-    (!fStatus || (fStatus === 'not_mastered' ? p.status !== 'mastered' : p.status === fStatus)) &&
-    (!fDiff || p.difficulty === fDiff) &&
-    (!fCat || p.category === fCat)
-  )
+  const filtered = problems.filter(p => {
+    const comp = getCompetence(p.avg_quality, p.total_reviews)
+    return (!fComp || comp === fComp) &&
+      (!fDiff || p.difficulty === fDiff) &&
+      (!fCat || p.category === fCat)
+  })
 
   const categories = [...new Set(problems.map(p => p.category).filter(Boolean))] as string[]
 
@@ -49,8 +57,13 @@ export function ProblemsPage() {
     try {
       const result = await api.review(id, quality)
       toast(`已评分: ${quality}`)
-      setProblems(prev => prev.map(p => p.id === id ? { ...p, status: result.status as Problem['status'], next_review: result.next_review, ef: result.ef, interval_days: result.interval, consecutive_correct: result.consecutive } : p))
-      api.getProblems().then(setProblems)
+      setProblems(prev => prev.map(p => p.id === id ? {
+        ...p,
+        next_review: result.next_review,
+        avg_quality: result.avg_quality,
+        total_reviews: result.total_reviews,
+        round: result.round,
+      } : p))
     } catch (e: any) { toast(e.message, 'error') }
     finally { setSubmittingId(null) }
   }
@@ -108,13 +121,12 @@ export function ProblemsPage() {
       </div>
 
       <div className="flex gap-2 flex-wrap">
-        <select value={fStatus} onChange={e => setFStatus(e.target.value)} className="border dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 rounded-md px-2 py-1 text-sm">
-          <option value="">全部状态</option>
+        <select value={fComp} onChange={e => setFComp(e.target.value)} className="border dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 rounded-md px-2 py-1 text-sm">
+          <option value="">全部程度</option>
           <option value="new">未开始</option>
-          <option value="learning">学习中</option>
-          <option value="review">复习中</option>
-          <option value="mastered">已掌握</option>
-          <option value="not_mastered">未掌握</option>
+          <option value="weak">薄弱</option>
+          <option value="medium">一般</option>
+          <option value="strong">熟练</option>
         </select>
         <select value={fDiff} onChange={e => setFDiff(e.target.value)} className="border dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 rounded-md px-2 py-1 text-sm">
           <option value="">全部难度</option>
@@ -159,8 +171,8 @@ export function ProblemsPage() {
               <th className="px-4 py-2 text-left w-12">#</th>
               <th className="px-4 py-2 text-left">题目</th>
               <th className="px-4 py-2 text-left w-20">难度</th>
-              <th className="px-4 py-2 text-left w-24">分类</th>
-              <th className="px-4 py-2 text-left w-20">状态</th>
+              <th className="px-4 py-2 text-left w-20">分类</th>
+              <th className="px-4 py-2 text-left w-16">掌握</th>
               <th className="px-4 py-2 text-left w-28">下次复习</th>
               <th className="px-4 py-2 text-left w-52">操作</th>
             </tr>
@@ -173,8 +185,8 @@ export function ProblemsPage() {
                   <a href={getLeetCodeUrl(p.title, p.leetcode_url)} target="_blank" className="text-blue-600 hover:underline" rel="noreferrer">{p.title}</a>
                 </td>
                 <td className="px-4 py-2"><DiffBadge diff={p.difficulty} /></td>
-                <td className="px-4 py-2 text-gray-500 dark:text-gray-400 whitespace-nowrap">{p.category || '-'}</td>
-                <td className="px-4 py-2"><StatusLabel status={p.status} /></td>
+                <td className="px-4 py-2 text-gray-500 dark:text-gray-400 whitespace-nowrap text-xs">{p.category || '-'}</td>
+                <td className="px-4 py-2"><CompetenceLabel avgQuality={p.avg_quality} totalReviews={p.total_reviews} /></td>
                 <td className="px-4 py-2 text-gray-400 text-xs whitespace-nowrap">{formatNextReview(p.next_review)}</td>
                 <td className="px-4 py-2 whitespace-nowrap">
                   <button

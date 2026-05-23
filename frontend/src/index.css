@@ -54,11 +54,6 @@ body {
 .diff-中等 { @apply bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900 dark:text-amber-300 dark:border-amber-800; }
 .diff-困难 { @apply bg-red-100 text-red-800 border border-red-200 dark:bg-red-900 dark:text-red-300 dark:border-red-800; }
 
-/* ── 状态标签 ── */
-.status-new { @apply bg-gray-200 dark:bg-gray-600 dark:text-gray-300; }
-.status-learning { @apply bg-blue-100 dark:bg-blue-900 dark:text-blue-300; }
-.status-review { @apply bg-amber-100 dark:bg-amber-900 dark:text-amber-300; }
-.status-mastered { @apply bg-emerald-100 dark:bg-emerald-900 dark:text-emerald-300 shadow-sm shadow-emerald-500/30; }
 
 /* ── Toast ── */
 .toast {

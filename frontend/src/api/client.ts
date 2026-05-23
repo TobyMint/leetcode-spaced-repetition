@@ -1,4 +1,4 @@
-import type { Problem, TodayProblems, ReviewResult, Stats, ActivityLogEntry, Settings } from '../types'
+import type { Problem, TodayData, ReviewResult, Stats, ActivityLogEntry, Settings, RoundProgress } from '../types'
 
 const BASE = '/api'
 
@@ -15,7 +15,7 @@ async function request<T>(path: string, opts?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  getToday: () => request<TodayProblems>('/today'),
+  getToday: () => request<TodayData>('/today'),
 
   getProblems: () => request<Problem[]>('/problems'),
 
@@ -40,6 +40,8 @@ export const api = {
     request<{ ok: boolean }>(`/problems/${id}/reset`, { method: 'POST' }),
 
   getStats: () => request<Stats>('/stats'),
+
+  getRoundProgress: () => request<RoundProgress>('/round'),
 
   getActivityLog: () => request<ActivityLogEntry[]>('/activity'),
 

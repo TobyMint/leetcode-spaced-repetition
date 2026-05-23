@@ -6,11 +6,11 @@ import { useToast } from '../components/Toast'
 import { DiffBadge } from '../components/DiffBadge'
 import type { Stats } from '../types'
 
-const STATUS_CONFIG = [
-  { key: 'mastered', label: '已掌握', color: 'bg-emerald-500', light: 'bg-emerald-100 dark:bg-emerald-900' },
-  { key: 'review', label: '复习中', color: 'bg-amber-400', light: 'bg-amber-100 dark:bg-amber-900' },
-  { key: 'learning', label: '学习中', color: 'bg-blue-400', light: 'bg-blue-100 dark:bg-blue-900' },
-  { key: 'new', label: '未开始', color: 'bg-gray-300 dark:bg-gray-600', light: 'bg-gray-100 dark:bg-gray-700' },
+const COMP_CONFIG = [
+  { key: 'strong', label: '熟练', color: 'bg-emerald-500', light: 'bg-emerald-100 dark:bg-emerald-900' },
+  { key: 'medium', label: '一般', color: 'bg-amber-400', light: 'bg-amber-100 dark:bg-amber-900' },
+  { key: 'weak',   label: '薄弱', color: 'bg-red-400', light: 'bg-red-100 dark:bg-red-900' },
+  { key: 'new',    label: '未开始', color: 'bg-gray-300 dark:bg-gray-600', light: 'bg-gray-100 dark:bg-gray-700' },
 ]
 
 export function StatsPage() {
@@ -25,11 +25,10 @@ export function StatsPage() {
   if (loading) return <Loading />
   if (!stats) return null
 
-  const { counts, today_reviewed, streak, daily, difficulty } = stats
+  const { counts, today_reviewed, streak, daily, difficulty, global_round, round_done, round_total } = stats
 
-  // 进度 = 非 new 的题目
-  const inProgress = counts.total - counts.new
-  const progressPercent = counts.total ? Math.round((inProgress / counts.total) * 100) : 0
+  // 轮次进度
+  const roundPercent = round_total ? Math.round((round_done / round_total) * 100) : 0
 
   // 最近 7 天柱状图
   const recentDays: { label: string; count: number; date: string }[] = []
@@ -42,7 +41,7 @@ export function StatsPage() {
     recentDays.push({ label, count: item ? item.cnt : 0, date: key })
   }
   const maxCount = Math.max(...recentDays.map(d => d.count), 1)
-  const barMaxH = 96 // px
+  const barMaxH = 96
 
   return (
     <div className="page-enter space-y-6">
@@ -57,8 +56,8 @@ export function StatsPage() {
           <p className="text-sm text-gray-500 mt-1">总题数</p>
         </div>
         <div className="card text-center">
-          <p className="text-3xl font-bold text-emerald-500">{counts.mastered}</p>
-          <p className="text-sm text-gray-500 mt-1">已掌握</p>
+          <p className="text-3xl font-bold text-emerald-500">{counts.strong}</p>
+          <p className="text-sm text-gray-500 mt-1">熟练</p>
         </div>
         <div className="card text-center">
           <p className="text-3xl font-bold text-amber-500">{today_reviewed}</p>
@@ -70,7 +69,25 @@ export function StatsPage() {
         </div>
       </div>
 
-      {/* 总体进度 — 环形图 + 分布 */}
+      {/* 轮次进度 */}
+      <div className="card">
+        <h3 className="font-medium mb-3 text-gray-800 dark:text-gray-100">
+          第 {global_round} 轮 · {round_done} / {round_total}
+        </h3>
+        <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all duration-700"
+            style={{ width: `${roundPercent}%` }}
+          />
+        </div>
+        <p className="text-xs text-gray-400 mt-2">
+          {roundPercent < 100
+            ? `还差 ${round_total - round_done} 题完成本轮`
+            : '本轮已完成！'}
+        </p>
+      </div>
+
+      {/* 掌握程度分布 */}
       <div className="card flex items-center gap-8">
         {/* 环形图 */}
         <div className="relative shrink-0" style={{ width: 130, height: 130 }}>
@@ -80,23 +97,22 @@ export function StatsPage() {
             <circle cx="65" cy="65" r="56" fill="none" stroke="currentColor" strokeWidth="12"
               className="text-emerald-500"
               strokeDasharray={2 * Math.PI * 56}
-              strokeDashoffset={2 * Math.PI * 56 * (1 - progressPercent / 100)}
+              strokeDashoffset={2 * Math.PI * 56 * (1 - roundPercent / 100)}
               strokeLinecap="round"
               style={{ transition: 'stroke-dashoffset 1s ease' }}
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-2xl font-bold text-gray-800 dark:text-gray-100">{progressPercent}%</span>
-            <span className="text-[10px] text-gray-400">已启动</span>
+            <span className="text-2xl font-bold text-gray-800 dark:text-gray-100">{roundPercent}%</span>
+            <span className="text-[10px] text-gray-400">本 轮</span>
           </div>
         </div>
 
-        {/* 状态分布条 */}
+        {/* 分布条 */}
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-gray-800 dark:text-gray-100 mb-3">题目分布</h3>
-          {/* 堆叠条 */}
+          <h3 className="font-medium text-gray-800 dark:text-gray-100 mb-3">掌握分布</h3>
           <div className="w-full h-5 rounded-full overflow-hidden flex mb-3">
-            {STATUS_CONFIG.map(s => {
+            {COMP_CONFIG.map(s => {
               const val = (counts as any)[s.key] || 0
               if (val === 0) return null
               const pct = counts.total ? (val / counts.total) * 100 : 0
@@ -110,9 +126,8 @@ export function StatsPage() {
               )
             })}
           </div>
-          {/* 图例 */}
           <div className="flex flex-wrap gap-x-4 gap-y-1">
-            {STATUS_CONFIG.map(s => {
+            {COMP_CONFIG.map(s => {
               const val = (counts as any)[s.key] || 0
               return (
                 <div key={s.key} className="flex items-center gap-1.5 text-xs">
@@ -128,7 +143,7 @@ export function StatsPage() {
 
       {/* 各难度完成率 */}
       <div className="card">
-        <h3 className="font-medium mb-3 text-gray-800 dark:text-gray-100">各难度完成率</h3>
+        <h3 className="font-medium mb-3 text-gray-800 dark:text-gray-100">各难度覆盖</h3>
         <div className="space-y-3">
           {Object.entries(difficulty).map(([diff, d]) => {
             const pct = d.total ? Math.round((d.done / d.total) * 100) : 0
