@@ -40,7 +40,11 @@ export function TodayPage() {
     try {
       await api.review(id, quality)
       toast(`已评分: ${quality}`)
-      load()  // 刷新队列
+      // 乐观更新：立即从队列移除，再异步刷新补足空缺
+      setQueue(prev => prev.filter(item => item.id !== id))
+      setDoneToday(prev => prev + 1)
+      setExpanded(null)
+      load()
     } catch (e: any) { toast(e.message, 'error') }
     finally { setSubmittingId(null) }
   }
