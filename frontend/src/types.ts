@@ -59,6 +59,7 @@ export interface ActivityLogEntry {
   detail: string
   created_at: string
   title?: string
+  leetcode_url?: string | null
 }
 
 export interface ActivityLogResponse {

@@ -66,7 +66,7 @@ export function ActivityLogPage() {
                       {LABELS[log.action] || log.action}
                     </span>
                     <a
-                      href={getLeetCodeUrl(log.title || '')}
+                      href={getLeetCodeUrl(log.leetcode_url)}
                       target="_blank"
                       className="text-sm font-medium text-blue-600 hover:underline"
                       rel="noreferrer"

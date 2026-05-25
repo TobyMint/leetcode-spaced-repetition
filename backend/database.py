@@ -693,7 +693,7 @@ def get_activity_log(limit: int = 20, offset: int = 0) -> dict:
     total = conn.execute("SELECT COUNT(*) FROM activity_log").fetchone()[0]
     rows = conn.execute("""
         SELECT a.id, a.problem_id, a.action, a.detail, a.created_at,
-               p.title
+               p.title, p.leetcode_url
         FROM activity_log a
         JOIN problems p ON a.problem_id = p.id
         ORDER BY a.created_at DESC

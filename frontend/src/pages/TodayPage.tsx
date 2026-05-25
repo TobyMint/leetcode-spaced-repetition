@@ -120,7 +120,7 @@ export function TodayPage() {
               <div className="flex items-center gap-3 min-w-0">
                 <span className="text-gray-400 text-sm shrink-0">#{p.id}</span>
                 <a
-                  href={getLeetCodeUrl(p.title, p.leetcode_url)}
+                  href={getLeetCodeUrl(p.leetcode_url)}
                   target="_blank"
                   onClick={e => e.stopPropagation()}
                   className="font-medium text-blue-600 hover:underline truncate"

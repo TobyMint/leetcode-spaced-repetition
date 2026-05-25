@@ -39,7 +39,7 @@ export function RandomPickModal({ pool, onReview, onClose }: Props) {
         <div className="modal-box bg-white dark:bg-gray-800 rounded-xl p-6 w-80 shadow-2xl text-center" onClick={e => e.stopPropagation()}>
           <p className="text-gray-400 dark:text-gray-500 text-sm mb-2">随机推荐</p>
           <a
-            href={getLeetCodeUrl(current.title, current.leetcode_url)}
+            href={getLeetCodeUrl(current.leetcode_url)}
             target="_blank"
             className="text-lg font-semibold text-blue-600 hover:underline"
             rel="noreferrer"
