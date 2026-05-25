@@ -29,7 +29,7 @@ export function CalendarHeatmap() {
   const [days, setDays] = useState<CalendarDay[]>([])
 
   useEffect(() => {
-    api.getActivityLog().then(logs => {
+    api.getActivityLog(2000, 0).then(d => {
       // Count reviews per day from activity log (ensure we have full data)
       const countMap: Record<string, number> = {}
 
@@ -43,7 +43,7 @@ export function CalendarHeatmap() {
       }
 
       // Count activity per day
-      logs.forEach(log => {
+      d.logs.forEach(log => {
         const key = log.created_at.slice(0, 10)
         if (key in countMap) countMap[key] = (countMap[key] || 0) + 1
       })

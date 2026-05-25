@@ -687,19 +687,20 @@ def log_activity(problem_id: int, action: str, detail: str = "") -> None:
     conn.close()
 
 
-def get_activity_log(limit: int = 200) -> list[dict]:
-    """获取最近的活动日志，按时间倒序。"""
+def get_activity_log(limit: int = 20, offset: int = 0) -> dict:
+    """获取活动日志，按时间倒序，支持分页。"""
     conn = get_conn()
+    total = conn.execute("SELECT COUNT(*) FROM activity_log").fetchone()[0]
     rows = conn.execute("""
         SELECT a.id, a.problem_id, a.action, a.detail, a.created_at,
                p.title
         FROM activity_log a
         JOIN problems p ON a.problem_id = p.id
         ORDER BY a.created_at DESC
-        LIMIT ?
-    """, (limit,)).fetchall()
+        LIMIT ? OFFSET ?
+    """, (limit, offset)).fetchall()
     conn.close()
-    return [dict(r) for r in rows]
+    return {"logs": [dict(r) for r in rows], "total": total}
 
 
 def get_problem_activity(problem_id: int, limit: int = 50) -> list[dict]:

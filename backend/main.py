@@ -115,8 +115,8 @@ def round_progress():
 
 
 @app.get("/api/activity")
-def activity_log():
-    return database.get_activity_log()
+def activity_log(limit: int = 20, offset: int = 0):
+    return database.get_activity_log(limit, offset)
 
 
 @app.get("/api/problems/{problem_id}/activity")

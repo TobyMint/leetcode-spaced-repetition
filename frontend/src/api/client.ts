@@ -1,4 +1,4 @@
-import type { Problem, TodayData, ReviewResult, Stats, ActivityLogEntry, Settings, RoundProgress } from '../types'
+import type { Problem, TodayData, ReviewResult, Stats, ActivityLogEntry, ActivityLogResponse, Settings, RoundProgress } from '../types'
 
 const BASE = '/api'
 
@@ -43,7 +43,7 @@ export const api = {
 
   getRoundProgress: () => request<RoundProgress>('/round'),
 
-  getActivityLog: () => request<ActivityLogEntry[]>('/activity'),
+  getActivityLog: (limit = 20, offset = 0) => request<ActivityLogResponse>(`/activity?limit=${limit}&offset=${offset}`),
 
   getProblemActivity: (id: number) => request<ActivityLogEntry[]>(`/problems/${id}/activity`),
 

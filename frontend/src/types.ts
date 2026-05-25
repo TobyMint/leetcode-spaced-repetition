@@ -61,6 +61,11 @@ export interface ActivityLogEntry {
   title?: string
 }
 
+export interface ActivityLogResponse {
+  logs: ActivityLogEntry[]
+  total: number
+}
+
 export interface Settings {
   daily_quota: string
   global_round: string
