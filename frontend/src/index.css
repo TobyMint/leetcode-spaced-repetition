@@ -60,6 +60,8 @@ body {
   @apply fixed top-5 right-5 px-5 py-3 rounded-lg text-white text-sm font-medium z-[1000] shadow-lg;
   animation: slideIn 0.35s ease, fadeOut 0.3s ease 2.5s forwards;
 }
+.toast-success { @apply bg-emerald-600; }
+.toast-error { @apply bg-red-600; }
 
 /* ── 模态 ── */
 .modal-overlay { animation: fadeIn 0.2s ease; }
